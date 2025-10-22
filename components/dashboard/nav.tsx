@@ -86,7 +86,8 @@ export function DashboardNav({ user }: DashboardNavProps) {
                 <span>Sign Out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
     </nav>
