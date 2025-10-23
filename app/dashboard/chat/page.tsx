@@ -32,7 +32,7 @@ export default function ChatPage() {
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [selectedModel, setSelectedModel] = useState('claude-3-5-sonnet-20241022')
+  const [selectedModel, setSelectedModel] = useState('claude-sonnet-4-5')
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -126,11 +126,11 @@ export default function ChatPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="claude-3-5-sonnet-20241022">
-                      Claude 3.5 Sonnet
+                    <SelectItem value="claude-sonnet-4-5">
+                      Claude Sonnet 4.5
                     </SelectItem>
-                    <SelectItem value="claude-3-5-haiku-20241022">
-                      Claude 3.5 Haiku
+                    <SelectItem value="claude-haiku-4-5">
+                      Claude Haiku 4.5
                     </SelectItem>
                     <SelectItem value="gpt-5">
                       GPT-5 (Thinking)
