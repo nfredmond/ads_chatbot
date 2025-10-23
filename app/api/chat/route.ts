@@ -28,34 +28,78 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    // Fetch some sample campaign data for context
+    // Fetch connected ad accounts
+    const { data: adAccounts } = await supabase
+      .from('ad_accounts')
+      .select('platform, account_name, status')
+      .eq('tenant_id', profile?.tenant_id)
+      .eq('status', 'active')
+
+    // Fetch campaign data with metrics
     const { data: campaigns } = await supabase
       .from('campaigns')
-      .select('*')
+      .select('id, campaign_name, platform, status, budget_amount')
       .eq('tenant_id', profile?.tenant_id)
-      .limit(10)
+      .limit(20)
+
+    // Fetch recent metrics
+    const { data: recentMetrics } = await supabase
+      .from('campaign_metrics')
+      .select('date, impressions, clicks, conversions, spend, revenue')
+      .eq('tenant_id', profile?.tenant_id)
+      .order('date', { ascending: false })
+      .limit(30)
+
+    // Calculate summary stats
+    const totalSpend = recentMetrics?.reduce((sum, m) => sum + (Number(m.spend) || 0), 0) || 0
+    const totalRevenue = recentMetrics?.reduce((sum, m) => sum + (Number(m.revenue) || 0), 0) || 0
+    const totalConversions = recentMetrics?.reduce((sum, m) => sum + (m.conversions || 0), 0) || 0
+    const totalImpressions = recentMetrics?.reduce((sum, m) => sum + (m.impressions || 0), 0) || 0
+    const totalClicks = recentMetrics?.reduce((sum, m) => sum + (m.clicks || 0), 0) || 0
+    const avgROAS = totalSpend > 0 ? totalRevenue / totalSpend : 0
+
+    const hasData = campaigns && campaigns.length > 0
 
     // Build context for Claude
-    const systemPrompt = `You are an AI marketing analytics assistant helping analyze advertising campaign performance across Google Ads, Meta Ads, and LinkedIn Ads.
+    const systemPrompt = `You are an AI marketing analytics assistant helping ${profile?.full_name || user.email} analyze their advertising campaign performance across Google Ads, Meta Ads, and LinkedIn Ads.
 
-Current user: ${profile?.full_name || user.email}
+Connected Ad Platforms: ${adAccounts?.map((a) => a.platform.replace('_ads', '').toUpperCase()).join(', ') || 'None'}
 
-Available campaign data: ${
-      campaigns && campaigns.length > 0
-        ? JSON.stringify(campaigns, null, 2)
-        : 'No campaigns connected yet. This is a demo account.'
-    }
+${hasData ? `
+Campaign Summary:
+- Total Active Campaigns: ${campaigns.length}
+- Total Ad Spend (last 30 days): $${totalSpend.toFixed(2)}
+- Total Revenue: $${totalRevenue.toFixed(2)}
+- Total Conversions: ${totalConversions}
+- Total Impressions: ${totalImpressions.toLocaleString()}
+- Total Clicks: ${totalClicks}
+- Average ROAS: ${avgROAS.toFixed(2)}x
+- CTR: ${totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : 0}%
+
+Campaign Details:
+${JSON.stringify(campaigns.slice(0, 10), null, 2)}
+
+Recent Metrics (last 7 days):
+${JSON.stringify(recentMetrics?.slice(0, 7), null, 2)}
+` : `
+⚠️ NO CAMPAIGN DATA CONNECTED YET
+
+The user needs to:
+1. Connect their ad platform accounts in Settings
+2. Sync campaign data from their accounts
+3. Wait for data to populate the dashboard
+
+When the user asks about campaigns, politely inform them they need to connect their ad accounts first. Explain what they can do with the platform once connected.`}
 
 You should:
 - Provide actionable insights about campaign performance
-- Suggest optimization strategies
+- Suggest optimization strategies based on actual data
 - Explain metrics like ROAS, CTR, CPA, and conversions
 - Compare platforms when asked
 - Identify trends and anomalies
 - Be concise but thorough
-- Use specific numbers when available
-
-When the user asks about their campaigns and no real data is available, provide helpful examples using realistic demo data and explain how to connect their actual ad accounts.`
+- Use specific numbers from their actual data
+- If no data is available, guide them to connect their accounts in Settings`
 
     // Convert messages to Claude format
     const claudeMessages = messages

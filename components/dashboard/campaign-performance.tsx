@@ -2,30 +2,76 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
-const sampleData = [
-  { date: '10/15', spend: 420, conversions: 12, revenue: 1680 },
-  { date: '10/16', spend: 380, conversions: 15, revenue: 2100 },
-  { date: '10/17', spend: 450, conversions: 18, revenue: 2520 },
-  { date: '10/18', spend: 390, conversions: 14, revenue: 1960 },
-  { date: '10/19', spend: 480, conversions: 20, revenue: 2800 },
-  { date: '10/20', spend: 510, conversions: 22, revenue: 3080 },
-  { date: '10/21', spend: 440, conversions: 16, revenue: 2240 },
-]
+interface CampaignPerformanceProps {
+  tenantId: string | null
+}
 
-export function CampaignPerformance() {
+export function CampaignPerformance({ tenantId }: CampaignPerformanceProps) {
+  const [data, setData] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+
+  useEffect(() => {
+    if (!tenantId) {
+      setLoading(false)
+      return
+    }
+
+    const fetchData = async () => {
+      const { data: metricsData } = await supabase
+        .from('campaign_metrics')
+        .select('date, spend, revenue, conversions')
+        .eq('tenant_id', tenantId)
+        .order('date', { ascending: true })
+        .limit(30)
+
+      if (metricsData && metricsData.length > 0) {
+        const formattedData = metricsData.map((m) => ({
+          date: new Date(m.date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }),
+          spend: Number(m.spend) || 0,
+          revenue: Number(m.revenue) || 0,
+          conversions: m.conversions || 0,
+        }))
+        setData(formattedData)
+      }
+      setLoading(false)
+    }
+
+    fetchData()
+  }, [tenantId])
+
   return (
-    <Card>
+    <Card className="dark:bg-gray-800">
       <CardHeader>
-        <CardTitle>Campaign Performance</CardTitle>
+        <CardTitle className="dark:text-white">Campaign Performance</CardTitle>
       </CardHeader>
       <CardContent>
+        {loading ? (
+          <div className="h-[300px] flex items-center justify-center">
+            <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+          </div>
+        ) : data.length === 0 ? (
+          <div className="h-[300px] flex flex-col items-center justify-center text-center">
+            <p className="text-gray-500 dark:text-gray-400 mb-2">No campaign data available yet</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">
+              Connect your ad platforms to start tracking performance
+            </p>
+          </div>
+        ) : (
         <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={sampleData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip />
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" className="dark:stroke-gray-700" />
+              <XAxis dataKey="date" className="dark:fill-gray-400" />
+              <YAxis className="dark:fill-gray-400" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  border: '1px solid #e5e7eb',
+                }}
+              />
             <Legend />
             <Line
               type="monotone"
@@ -43,6 +89,7 @@ export function CampaignPerformance() {
             />
           </LineChart>
         </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
   )

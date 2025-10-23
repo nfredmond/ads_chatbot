@@ -34,24 +34,24 @@ export function DashboardNav({ user }: DashboardNavProps) {
   const initials = user.email?.charAt(0).toUpperCase() || 'U'
 
   return (
-    <nav className="bg-white border-b border-gray-200">
+    <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-8">
-            <Link href="/dashboard" className="text-xl font-bold text-blue-600">
+            <Link href="/dashboard" className="text-xl font-bold text-blue-600 dark:text-blue-400">
               Marketing Analytics
             </Link>
             <div className="flex space-x-4">
               <Link
                 href="/dashboard"
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
+                className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
               >
                 <BarChart3 className="w-4 h-4" />
                 <span>Dashboard</span>
               </Link>
               <Link
                 href="/dashboard/chat"
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
+                className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
               >
                 <MessageSquare className="w-4 h-4" />
                 <span>AI Chat</span>

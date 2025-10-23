@@ -17,6 +17,11 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null)
   const [adAccounts, setAdAccounts] = useState<any[]>([])
 
+  // Profile state
+  const [fullName, setFullName] = useState('')
+  const [organization, setOrganization] = useState('')
+  const [phone, setPhone] = useState('')
+
   // API Keys state
   const [anthropicKey, setAnthropicKey] = useState('')
   const [openaiKey, setOpenaiKey] = useState('')
@@ -40,12 +45,58 @@ export default function SettingsPage() {
   const supabase = createClient()
 
   useEffect(() => {
+    loadProfile()
     loadAdAccounts()
   }, [])
+
+  const loadProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, organization, phone')
+        .eq('id', user.id)
+        .single()
+      
+      if (profile) {
+        setFullName(profile.full_name || '')
+        setOrganization(profile.organization || '')
+        setPhone(profile.phone || '')
+      }
+    }
+  }
 
   const loadAdAccounts = async () => {
     const { data } = await supabase.from('ad_accounts').select('*')
     if (data) setAdAccounts(data)
+  }
+
+  const handleSaveProfile = async () => {
+    setLoading(true)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          full_name: fullName,
+          organization: organization,
+          phone: phone,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user?.id)
+
+      if (updateError) throw updateError
+      
+      setSuccess('Profile updated successfully!')
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSaveAPIKeys = async () => {
@@ -202,7 +253,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Settings</h1>
+        <h1 className="text-3xl font-bold dark:text-white">Settings</h1>
       </div>
 
       {success && (
@@ -217,17 +268,82 @@ export default function SettingsPage() {
         </div>
       )}
 
-      <Tabs defaultValue="api-keys" className="space-y-4">
+      <Tabs defaultValue="profile" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="api-keys">API Keys</TabsTrigger>
           <TabsTrigger value="ad-platforms">Ad Platforms</TabsTrigger>
           <TabsTrigger value="connected">Connected Accounts</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="api-keys" className="space-y-4">
-          <Card>
+        <TabsContent value="profile" className="space-y-4">
+          <Card className="dark:bg-gray-800">
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+              <CardTitle className="dark:text-white">Personal Information</CardTitle>
+              <CardDescription>
+                Update your profile and organization details
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="full-name">Full Name</Label>
+                <Input
+                  id="full-name"
+                  placeholder="John Doe"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="organization">Organization</Label>
+                <Input
+                  id="organization"
+                  placeholder="Acme Marketing Agency"
+                  value={organization}
+                  onChange={(e) => setOrganization(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="+1 (555) 123-4567"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+              <Button onClick={handleSaveProfile} disabled={loading}>
+                Save Profile
+              </Button>
+              <Separator className="my-4" />
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium dark:text-white">Setup Wizard</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Re-run the onboarding wizard to reconfigure your ad platform connections
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    const { data: { user } } = await supabase.auth.getUser()
+                    await supabase
+                      .from('profiles')
+                      .update({ onboarding_completed: false })
+                      .eq('id', user?.id)
+                    window.location.href = '/onboarding'
+                  }}
+                >
+                  Re-run Setup Wizard
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="api-keys" className="space-y-4">
+          <Card className="dark:bg-gray-800">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2 dark:text-white">
                 <Key className="w-5 h-5" />
                 <span>AI API Keys</span>
               </CardTitle>
@@ -288,9 +404,9 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="ad-platforms" className="space-y-4">
-          <Card>
+          <Card className="dark:bg-gray-800">
             <CardHeader>
-              <CardTitle>Google Ads</CardTitle>
+              <CardTitle className="dark:text-white">Google Ads</CardTitle>
               <CardDescription>
                 Connect your Google Ads account to sync campaign data
               </CardDescription>
@@ -352,9 +468,9 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="dark:bg-gray-800">
             <CardHeader>
-              <CardTitle>Meta Ads (Facebook/Instagram)</CardTitle>
+              <CardTitle className="dark:text-white">Meta Ads (Facebook/Instagram)</CardTitle>
               <CardDescription>
                 Connect your Meta Ads account to sync campaign data
               </CardDescription>
@@ -407,9 +523,9 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="dark:bg-gray-800">
             <CardHeader>
-              <CardTitle>LinkedIn Ads</CardTitle>
+              <CardTitle className="dark:text-white">LinkedIn Ads</CardTitle>
               <CardDescription>
                 Connect your LinkedIn Ads account to sync campaign data
               </CardDescription>
@@ -464,16 +580,16 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="connected" className="space-y-4">
-          <Card>
+          <Card className="dark:bg-gray-800">
             <CardHeader>
-              <CardTitle>Connected Ad Accounts</CardTitle>
+              <CardTitle className="dark:text-white">Connected Ad Accounts</CardTitle>
               <CardDescription>
                 Manage your connected advertising platform accounts
               </CardDescription>
             </CardHeader>
             <CardContent>
               {adAccounts.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
+                <p className="text-gray-500 dark:text-gray-400 text-center py-8">
                   No ad accounts connected yet. Connect your accounts in the "Ad Platforms" tab.
                 </p>
               ) : (
@@ -481,15 +597,15 @@ export default function SettingsPage() {
                   {adAccounts.map((account) => (
                     <div
                       key={account.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
+                      className="flex items-center justify-between p-4 border dark:border-gray-700 rounded-lg dark:bg-gray-700/50"
                     >
                       <div className="flex items-center space-x-4">
                         <div className="flex-1">
-                          <h4 className="font-semibold">{account.account_name}</h4>
-                          <p className="text-sm text-gray-500">
+                          <h4 className="font-semibold dark:text-white">{account.account_name}</h4>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
                             Platform: {account.platform.replace('_', ' ')}
                           </p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
                             Account ID: {account.account_id}
                           </p>
                         </div>

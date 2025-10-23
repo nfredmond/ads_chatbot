@@ -95,14 +95,14 @@ export default function ChatPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">AI Marketing Assistant</h1>
+        <h1 className="text-3xl font-bold dark:text-white">AI Marketing Assistant</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <Card className="lg:col-span-3">
+        <Card className="lg:col-span-3 dark:bg-gray-800">
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Sparkles className="w-5 h-5 text-blue-600" />
+            <CardTitle className="flex items-center space-x-2 dark:text-white">
+              <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               <span>Chat</span>
             </CardTitle>
           </CardHeader>
@@ -121,13 +121,13 @@ export default function ChatPage() {
                         className={`max-w-[80%] rounded-lg p-4 ${
                           message.role === 'user'
                             ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-900'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
                         }`}
                       >
                         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                         <p
                           className={`text-xs mt-2 ${
-                            message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
+                            message.role === 'user' ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
                           }`}
                         >
                           {message.timestamp.toLocaleTimeString()}
@@ -137,11 +137,11 @@ export default function ChatPage() {
                   ))}
                   {loading && (
                     <div className="flex justify-start">
-                      <div className="bg-gray-100 rounded-lg p-4">
+                      <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
                         <div className="flex space-x-2">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-75"></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></div>
+                          <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce delay-75"></div>
+                          <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce delay-150"></div>
                         </div>
                       </div>
                     </div>
@@ -171,9 +171,9 @@ export default function ChatPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="dark:bg-gray-800">
           <CardHeader>
-            <CardTitle className="text-sm">Suggested Questions</CardTitle>
+            <CardTitle className="text-sm dark:text-white">Suggested Questions</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
