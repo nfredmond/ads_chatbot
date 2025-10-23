@@ -32,7 +32,7 @@ export default function ChatPage() {
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [selectedModel, setSelectedModel] = useState('claude-3-5-sonnet-20241022')
+  const [selectedModel, setSelectedModel] = useState('claude-4-5-sonnet')
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -112,27 +112,27 @@ export default function ChatPage() {
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600 dark:text-gray-400">Model:</span>
                 <Select value={selectedModel} onValueChange={setSelectedModel}>
-                  <SelectTrigger className="w-[240px]">
+                  <SelectTrigger className="w-[260px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="claude-3-5-sonnet-20241022">
-                      Claude 3.5 Sonnet
+                    <SelectItem value="claude-4-5-sonnet">
+                      Claude 4.5 Sonnet
                     </SelectItem>
-                    <SelectItem value="claude-3-5-haiku-20241022">
-                      Claude 3.5 Haiku
+                    <SelectItem value="gpt-5">
+                      GPT-5 (high)
                     </SelectItem>
-                    <SelectItem value="gpt-4o">
-                      ChatGPT 4o
+                    <SelectItem value="gpt-5-medium">
+                      GPT-5 (medium)
                     </SelectItem>
-                    <SelectItem value="gpt-4o-mini">
-                      ChatGPT 4o Mini (Fast)
+                    <SelectItem value="gpt-5-codex">
+                      GPT-5 Codex (high)
                     </SelectItem>
-                    <SelectItem value="o1-preview">
-                      ChatGPT o1 (Thinking)
+                    <SelectItem value="o3">
+                      o3 (Thinking)
                     </SelectItem>
-                    <SelectItem value="o1-mini">
-                      ChatGPT o1-mini (Fast Thinking)
+                    <SelectItem value="gpt-5-mini-high">
+                      GPT-5 mini (high)
                     </SelectItem>
                   </SelectContent>
                 </Select>
