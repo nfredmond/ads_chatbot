@@ -139,7 +139,9 @@ You should:
       })
 
       if (!openaiResponse.ok) {
-        throw new Error('OpenAI API request failed')
+        const errorData = await openaiResponse.json().catch(() => ({}))
+        console.error('OpenAI API error:', errorData)
+        throw new Error(`OpenAI API request failed: ${errorData.error?.message || openaiResponse.statusText}`)
       }
 
       const openaiData = await openaiResponse.json()

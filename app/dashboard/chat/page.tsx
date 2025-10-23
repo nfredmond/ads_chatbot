@@ -132,17 +132,17 @@ export default function ChatPage() {
                     <SelectItem value="claude-haiku-4-5">
                       Claude Haiku 4.5
                     </SelectItem>
-                    <SelectItem value="gpt-5">
-                      GPT-5 (Thinking)
+                    <SelectItem value="gpt-4o">
+                      GPT-4o
                     </SelectItem>
-                    <SelectItem value="gpt-5-mini">
-                      GPT-5 Mini
+                    <SelectItem value="gpt-4o-mini">
+                      GPT-4o Mini (Fast)
                     </SelectItem>
-                    <SelectItem value="gpt-5-nano">
-                      GPT-5 Nano (Fast)
+                    <SelectItem value="o1-preview">
+                      o1-preview (Reasoning)
                     </SelectItem>
-                    <SelectItem value="gpt-5-chat-latest">
-                      GPT-5 Chat
+                    <SelectItem value="o1-mini">
+                      o1-mini (Fast Reasoning)
                     </SelectItem>
                   </SelectContent>
                 </Select>
