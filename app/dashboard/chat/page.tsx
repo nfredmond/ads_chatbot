@@ -176,12 +176,12 @@ export default function ChatPage() {
             <CardTitle className="text-sm dark:text-white">Suggested Questions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {suggestedQueries.map((query, index) => (
                 <Button
                   key={index}
                   variant="outline"
-                  className="w-full text-left justify-start h-auto py-3 px-3 text-sm"
+                  className="w-full text-left justify-start h-auto py-3 px-4 text-sm whitespace-normal leading-relaxed"
                   onClick={() => handleSuggestedQuery(query)}
                 >
                   {query}
