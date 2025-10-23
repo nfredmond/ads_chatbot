@@ -30,7 +30,7 @@ export default async function Home() {
           <div className="flex justify-center space-x-4">
             <Link href="/signup">
               <Button size="lg" className="text-lg px-8 py-6">
-                Get Started Free
+                Get Started
               </Button>
             </Link>
             <Link href="/login">
