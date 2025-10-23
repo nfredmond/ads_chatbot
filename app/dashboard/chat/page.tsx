@@ -32,13 +32,23 @@ export default function ChatPage() {
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [selectedModel, setSelectedModel] = useState('claude-4-5-sonnet')
+  const [selectedModel, setSelectedModel] = useState('claude-3-5-sonnet-20241022')
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
+  }, [messages])
+
+  useEffect(() => {
+    // Additional scroll after a small delay to ensure content is rendered
+    const timer = setTimeout(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+      }
+    }, 100)
+    return () => clearTimeout(timer)
   }, [messages])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -116,23 +126,23 @@ export default function ChatPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="claude-4-5-sonnet">
-                      Claude 4.5 Sonnet
+                    <SelectItem value="claude-3-5-sonnet-20241022">
+                      Claude 3.5 Sonnet
                     </SelectItem>
-                    <SelectItem value="gpt-5">
-                      GPT-5 (high)
+                    <SelectItem value="claude-3-5-haiku-20241022">
+                      Claude 3.5 Haiku
                     </SelectItem>
-                    <SelectItem value="gpt-5-medium">
-                      GPT-5 (medium)
+                    <SelectItem value="gpt-4o">
+                      GPT-4o
                     </SelectItem>
-                    <SelectItem value="gpt-5-codex">
-                      GPT-5 Codex (high)
+                    <SelectItem value="gpt-4o-mini">
+                      GPT-4o Mini (Fast)
                     </SelectItem>
-                    <SelectItem value="o3">
-                      o3 (Thinking)
+                    <SelectItem value="o1-preview">
+                      GPT-o1 (Thinking)
                     </SelectItem>
-                    <SelectItem value="gpt-5-mini-high">
-                      GPT-5 mini (high)
+                    <SelectItem value="o1-mini">
+                      GPT-o1 Mini (Fast)
                     </SelectItem>
                   </SelectContent>
                 </Select>
