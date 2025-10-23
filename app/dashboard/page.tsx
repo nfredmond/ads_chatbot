@@ -69,14 +69,14 @@ export default async function DashboardPage() {
 
       <ConnectionStatus connectedPlatforms={connectedPlatforms} />
 
-      <MetricsOverview metrics={metrics} hasData={metricsData && metricsData.length > 0} />
+      <MetricsOverview metrics={metrics} hasData={!!(metricsData && metricsData.length > 0)} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <CampaignPerformance tenantId={tenantId} />
-        <PlatformComparison tenantId={tenantId} connectedPlatforms={connectedPlatforms} />
+        <CampaignPerformance tenantId={tenantId || null} />
+        <PlatformComparison tenantId={tenantId || null} connectedPlatforms={connectedPlatforms} />
       </div>
 
-      <RecentInsights tenantId={tenantId} />
+      <RecentInsights tenantId={tenantId || null} />
     </div>
   )
 }
