@@ -112,24 +112,27 @@ export default function ChatPage() {
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600 dark:text-gray-400">Model:</span>
                 <Select value={selectedModel} onValueChange={setSelectedModel}>
-                  <SelectTrigger className="w-[220px]">
+                  <SelectTrigger className="w-[240px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="claude-3-5-sonnet-20241022">
-                      Claude 3.5 Sonnet (Latest)
+                      Claude 3.5 Sonnet
                     </SelectItem>
                     <SelectItem value="claude-3-5-haiku-20241022">
-                      Claude 3.5 Haiku (Fast)
-                    </SelectItem>
-                    <SelectItem value="claude-3-opus-20240229">
-                      Claude 3 Opus (Powerful)
+                      Claude 3.5 Haiku
                     </SelectItem>
                     <SelectItem value="gpt-4o">
-                      GPT-4o (OpenAI)
+                      ChatGPT 4o
                     </SelectItem>
                     <SelectItem value="gpt-4o-mini">
-                      GPT-4o Mini (Fast)
+                      ChatGPT 4o Mini (Fast)
+                    </SelectItem>
+                    <SelectItem value="o1-preview">
+                      ChatGPT o1 (Thinking)
+                    </SelectItem>
+                    <SelectItem value="o1-mini">
+                      ChatGPT o1-mini (Fast Thinking)
                     </SelectItem>
                   </SelectContent>
                 </Select>
