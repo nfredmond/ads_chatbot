@@ -112,7 +112,7 @@ You should:
     let assistantMessage = ''
 
     // Check if using OpenAI model
-    if (model.startsWith('gpt-')) {
+    if (model.startsWith('gpt-') || model.startsWith('o1-')) {
       // Use OpenAI API (if configured)
       const openaiApiKey = process.env.OPENAI_API_KEY
       if (!openaiApiKey) {
