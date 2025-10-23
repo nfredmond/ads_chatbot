@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { AlertCircle, Check, Link as LinkIcon } from 'lucide-react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 interface ConnectionStatusProps {
   connectedPlatforms: {
@@ -15,6 +17,9 @@ interface ConnectionStatusProps {
 }
 
 export function ConnectionStatus({ connectedPlatforms }: ConnectionStatusProps) {
+  const router = useRouter()
+  const supabase = createClient()
+
   const platforms = [
     { name: 'Google Ads', key: 'google', connected: connectedPlatforms.google },
     { name: 'Meta Ads', key: 'meta', connected: connectedPlatforms.meta },
@@ -23,6 +28,17 @@ export function ConnectionStatus({ connectedPlatforms }: ConnectionStatusProps) 
 
   const allConnected = platforms.every((p) => p.connected)
   const noneConnected = platforms.every((p) => !p.connected)
+
+  const handleSetupWizard = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      await supabase
+        .from('profiles')
+        .update({ onboarding_completed: false })
+        .eq('id', user.id)
+      router.push('/onboarding')
+    }
+  }
 
   if (noneConnected) {
     return (
@@ -48,8 +64,8 @@ export function ConnectionStatus({ connectedPlatforms }: ConnectionStatusProps) 
                 Connect Ad Platforms
               </Link>
             </Button>
-            <Button variant="outline" asChild>
-              <Link href="/onboarding">Set Up Wizard</Link>
+            <Button variant="outline" onClick={handleSetupWizard}>
+              Set Up Wizard
             </Button>
           </div>
         </CardContent>
