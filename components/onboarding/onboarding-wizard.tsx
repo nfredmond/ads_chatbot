@@ -87,7 +87,7 @@ export function OnboardingWizard({ userId, userEmail }: OnboardingWizardProps) {
       }
 
       // Update profile with onboarding info
-      const { error: profileError } = await supabase
+      const { error: profileError, data: updatedProfile } = await supabase
         .from('profiles')
         .update({
           full_name: fullName,
@@ -98,8 +98,16 @@ export function OnboardingWizard({ userId, userEmail }: OnboardingWizardProps) {
           updated_at: new Date().toISOString(),
         })
         .eq('id', userId)
+        .select()
 
-      if (profileError) throw profileError
+      if (profileError) {
+        console.error('Profile update error:', profileError)
+        throw profileError
+      }
+
+      if (!updatedProfile || updatedProfile.length === 0) {
+        throw new Error('Failed to update profile')
+      }
 
       // Save Google Ads if not skipped
       if (!skipGoogle && googleCustomerId) {
@@ -149,12 +157,14 @@ export function OnboardingWizard({ userId, userEmail }: OnboardingWizardProps) {
         })
       }
 
-      // Redirect to dashboard
-      router.push('/dashboard')
-      router.refresh()
+      // Wait a moment for database to fully commit
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      // Force redirect to dashboard
+      window.location.href = '/dashboard'
     } catch (err: any) {
+      console.error('Onboarding error:', err)
       alert('Error completing onboarding: ' + err.message)
-    } finally {
       setLoading(false)
     }
   }
