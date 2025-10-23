@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { messages } = await request.json()
+    const { messages, model = 'claude-3-5-sonnet-20241022' } = await request.json()
 
     // Get user's profile and tenant
     const { data: profile } = await supabase
@@ -109,15 +109,52 @@ You should:
         content: m.content,
       }))
 
-    // Call Claude API
+    let assistantMessage = ''
+
+    // Check if using OpenAI model
+    if (model.startsWith('gpt-')) {
+      // Use OpenAI API (if configured)
+      const openaiApiKey = process.env.OPENAI_API_KEY
+      if (!openaiApiKey) {
+        return NextResponse.json(
+          { error: 'OpenAI API key not configured. Please add OPENAI_API_KEY to environment variables.' },
+          { status: 500 }
+        )
+      }
+
+      const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...claudeMessages,
+          ],
+          max_tokens: 1024,
+        }),
+      })
+
+      if (!openaiResponse.ok) {
+        throw new Error('OpenAI API request failed')
+      }
+
+      const openaiData = await openaiResponse.json()
+      assistantMessage = openaiData.choices[0]?.message?.content || ''
+    } else {
+      // Use Claude API
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+        model: model,
       max_tokens: 1024,
       system: systemPrompt,
       messages: claudeMessages,
     })
 
-    const assistantMessage = response.content[0].type === 'text' ? response.content[0].text : ''
+      assistantMessage = response.content[0].type === 'text' ? response.content[0].text : ''
+    }
 
     // Save conversation to database
     try {

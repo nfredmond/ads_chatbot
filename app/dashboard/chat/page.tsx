@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Send, Sparkles } from 'lucide-react'
 
 interface Message {
@@ -31,6 +32,7 @@ export default function ChatPage() {
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [selectedModel, setSelectedModel] = useState('claude-3-5-sonnet-20241022')
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -61,6 +63,7 @@ export default function ChatPage() {
         },
         body: JSON.stringify({
           messages: [...messages, userMessage],
+          model: selectedModel,
         }),
       })
 
@@ -101,10 +104,37 @@ export default function ChatPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <Card className="lg:col-span-3 dark:bg-gray-800">
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2 dark:text-white">
-              <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center space-x-2 dark:text-white">
+                <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               <span>Chat</span>
             </CardTitle>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Model:</span>
+                <Select value={selectedModel} onValueChange={setSelectedModel}>
+                  <SelectTrigger className="w-[220px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="claude-3-5-sonnet-20241022">
+                      Claude 3.5 Sonnet (Latest)
+                    </SelectItem>
+                    <SelectItem value="claude-3-5-haiku-20241022">
+                      Claude 3.5 Haiku (Fast)
+                    </SelectItem>
+                    <SelectItem value="claude-3-opus-20240229">
+                      Claude 3 Opus (Powerful)
+                    </SelectItem>
+                    <SelectItem value="gpt-4o">
+                      GPT-4o (OpenAI)
+                    </SelectItem>
+                    <SelectItem value="gpt-4o-mini">
+                      GPT-4o Mini (Fast)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col space-y-4">
