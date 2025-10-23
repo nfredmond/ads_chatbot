@@ -36,18 +36,21 @@ export default function ChatPage() {
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    // Scroll to bottom when messages change
+    const scrollToBottom = () => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+        const scrollElement = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]')
+        if (scrollElement) {
+          scrollElement.scrollTop = scrollElement.scrollHeight
     }
-  }, [messages])
-
-  useEffect(() => {
-    // Additional scroll after a small delay to ensure content is rendered
-    const timer = setTimeout(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight
       }
-    }, 100)
+    }
+
+    // Immediate scroll
+    scrollToBottom()
+    
+    // Delayed scroll to ensure content is fully rendered
+    const timer = setTimeout(scrollToBottom, 100)
     return () => clearTimeout(timer)
   }, [messages])
 
