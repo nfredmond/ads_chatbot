@@ -68,6 +68,9 @@ export function ConnectionStatus({ connectedPlatforms }: ConnectionStatusProps) 
               Set Up Wizard
             </Button>
           </div>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mt-3">
+            Note: After connecting your platforms, click "Sync Data" in Settings to populate your dashboard with campaign metrics.
+          </p>
         </CardContent>
       </Card>
     )

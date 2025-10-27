@@ -250,6 +250,30 @@ export default function SettingsPage() {
     }
   }
 
+  const handleSyncData = async () => {
+    setLoading(true)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      const response = await fetch('/api/sync-data', {
+        method: 'POST',
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to sync data')
+      }
+
+      setSuccess('Data synced successfully! Check your dashboard for updated metrics.')
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -582,10 +606,19 @@ export default function SettingsPage() {
         <TabsContent value="connected" className="space-y-4">
           <Card className="dark:bg-gray-800">
             <CardHeader>
-              <CardTitle className="dark:text-white">Connected Ad Accounts</CardTitle>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="dark:text-white">Connected Ad Accounts</CardTitle>
               <CardDescription>
                 Manage your connected advertising platform accounts
               </CardDescription>
+                </div>
+                {adAccounts.length > 0 && (
+                  <Button onClick={handleSyncData} disabled={loading}>
+                    {loading ? 'Syncing...' : 'Sync Data'}
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               {adAccounts.length === 0 ? (
