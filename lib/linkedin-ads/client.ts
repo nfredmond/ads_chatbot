@@ -1,90 +1,143 @@
 /**
  * LinkedIn Ads API Client
- * Documentation: https://learn.microsoft.com/en-us/linkedin/marketing/
+ * Documentation:
+ * - Authentication: https://learn.microsoft.com/en-us/linkedin/shared/authentication/authentication
+ * - Getting Access: https://learn.microsoft.com/en-us/linkedin/shared/authentication/getting-access
+ * - Marketing API: https://learn.microsoft.com/en-us/linkedin/marketing/
+ * - Best Practices: https://learn.microsoft.com/en-us/linkedin/shared/api-guide/best-practices/overview
+ * 
+ * Note: Marketing API requires approval as an Advertising API partner.
+ * Uses Rest.li Protocol 2.0.0 with LinkedIn-specific headers.
  */
 
+const DEFAULT_API_VERSION = '202410'
+const LINKEDIN_API_BASE = 'https://api.linkedin.com'
+
 export interface LinkedInAdsConfig {
-  clientId: string
-  clientSecret: string
   accessToken: string
+  apiVersion?: string
+}
+
+/**
+ * Helper to create standard LinkedIn API headers following Rest.li protocol
+ */
+function getLinkedInHeaders(accessToken: string, apiVersion: string): Record<string, string> {
+  return {
+    'Authorization': `Bearer ${accessToken}`,
+    'LinkedIn-Version': apiVersion,
+    'X-Restli-Protocol-Version': '2.0.0',
+    'Connection': 'Keep-Alive',
+  }
+}
+
+/**
+ * Calculate date range for last 30 days in LinkedIn format
+ */
+function getDateRange() {
+  const end = new Date()
+  const start = new Date()
+  start.setDate(start.getDate() - 30)
+
+  return {
+    start: {
+      year: start.getFullYear(),
+      month: start.getMonth() + 1,
+      day: start.getDate(),
+    },
+    end: {
+      year: end.getFullYear(),
+      month: end.getMonth() + 1,
+      day: end.getDate(),
+    },
+  }
 }
 
 export async function fetchLinkedInAdsCampaigns(config: LinkedInAdsConfig) {
-  // Fetch ad accounts first
-  const accountsResponse = await fetch(
-    'https://api.linkedin.com/rest/adAccounts?q=search&search=(status:(values:List(ACTIVE,DRAFT)))',
-    {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${config.accessToken}`,
-        'LinkedIn-Version': '202410',
-        'X-Restli-Protocol-Version': '2.0.0',
-      },
-    }
-  )
+  const apiVersion = config.apiVersion ?? DEFAULT_API_VERSION
+  const headers = getLinkedInHeaders(config.accessToken, apiVersion)
+
+  // Step 1: Fetch ad accounts using Rest.li finder method
+  const accountsUrl = `${LINKEDIN_API_BASE}/rest/adAccounts?q=search&search=(status:(values:List(ACTIVE,DRAFT)))`
+  const accountsResponse = await fetch(accountsUrl, {
+    method: 'GET',
+    headers: {
+      ...headers,
+      'X-RestLi-Method': 'finder',
+    },
+  })
 
   if (!accountsResponse.ok) {
     const error = await accountsResponse.json().catch(() => ({}))
-    throw new Error(`LinkedIn Ads API error: ${error.message || 'Unknown error'}`)
+    const errorMessage = error.message || error.error_description || accountsResponse.statusText
+    throw new Error(`LinkedIn Ad Accounts API error: ${errorMessage}`)
   }
 
   const accountsData = await accountsResponse.json()
-  const adAccountId = accountsData.elements[0]?.id
-
-  if (!adAccountId) {
-    throw new Error('No LinkedIn ad accounts found')
+  
+  if (!accountsData.elements || accountsData.elements.length === 0) {
+    throw new Error('No LinkedIn ad accounts found. Ensure the access token has the required Marketing API permissions.')
   }
 
-  // Fetch campaigns
-  const campaignsResponse = await fetch(
-    `https://api.linkedin.com/rest/adCampaigns?q=search&search=(account:(values:List(urn:li:sponsoredAccount:${adAccountId})))`,
-    {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${config.accessToken}`,
-        'LinkedIn-Version': '202410',
-        'X-Restli-Protocol-Version': '2.0.0',
-      },
-    }
-  )
+  const adAccountId = accountsData.elements[0]?.id
+
+  // Step 2: Fetch campaigns for the ad account
+  const campaignsUrl = `${LINKEDIN_API_BASE}/rest/adCampaigns?q=search&search=(account:(values:List(urn:li:sponsoredAccount:${adAccountId})))&count=100`
+  const campaignsResponse = await fetch(campaignsUrl, {
+    method: 'GET',
+    headers: {
+      ...headers,
+      'X-RestLi-Method': 'finder',
+    },
+  })
 
   if (!campaignsResponse.ok) {
     const error = await campaignsResponse.json().catch(() => ({}))
-    throw new Error(`LinkedIn campaigns error: ${error.message || 'Unknown error'}`)
+    const errorMessage = error.message || error.error_description || campaignsResponse.statusText
+    throw new Error(`LinkedIn Campaigns API error: ${errorMessage}`)
   }
 
   const campaignsData = await campaignsResponse.json()
 
-  // Fetch analytics for each campaign
-  const campaignsWithMetrics = await Promise.all(
-    campaignsData.elements.map(async (campaign: any) => {
-      const analyticsResponse = await fetch(
-        `https://api.linkedin.com/rest/adAnalytics?` +
-          new URLSearchParams({
-            q: 'analytics',
-            pivot: 'CAMPAIGN',
-            dateRange: JSON.stringify({
-              start: { year: 2025, month: 1, day: 1 },
-              end: { year: 2025, month: 12, day: 31 },
-            }),
-            campaigns: `List(${campaign.id})`,
-            fields: 'impressions,clicks,costInLocalCurrency,externalWebsiteConversions,conversionValueInLocalCurrency',
-          }),
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${config.accessToken}`,
-            'LinkedIn-Version': '202410',
-            'X-Restli-Protocol-Version': '2.0.0',
-          },
-        }
-      )
+  if (!campaignsData.elements || campaignsData.elements.length === 0) {
+    // Return empty array if no campaigns found (not an error)
+    return []
+  }
 
-      const analytics = analyticsResponse.ok ? await analyticsResponse.json() : null
+  // Step 3: Fetch analytics for campaigns (batch request for efficiency)
+  const dateRange = getDateRange()
+  const campaignIds = campaignsData.elements.map((c: any) => c.id)
 
-      return { ...campaign, analytics: analytics?.elements[0] }
-    })
+  const analyticsParams = new URLSearchParams({
+    q: 'analytics',
+    pivot: 'CAMPAIGN',
+    dateRange: JSON.stringify(dateRange),
+    campaigns: `List(${campaignIds.join(',')})`,
+    fields: 'impressions,clicks,costInLocalCurrency,externalWebsiteConversions,conversionValueInLocalCurrency',
+  })
+
+  const analyticsUrl = `${LINKEDIN_API_BASE}/rest/adAnalytics?${analyticsParams.toString()}`
+  const analyticsResponse = await fetch(analyticsUrl, {
+    method: 'GET',
+    headers: {
+      ...headers,
+      'X-RestLi-Method': 'finder',
+    },
+  })
+
+  let analyticsData: any = { elements: [] }
+  if (analyticsResponse.ok) {
+    analyticsData = await analyticsResponse.json()
+  }
+
+  // Map analytics to campaigns
+  const analyticsMap = new Map(
+    analyticsData.elements?.map((a: any) => [a.pivotValues?.[0], a]) || []
   )
+
+  const campaignsWithMetrics = campaignsData.elements.map((campaign: any) => ({
+    ...campaign,
+    analytics: analyticsMap.get(campaign.id) || null,
+  }))
 
   return campaignsWithMetrics
 }

@@ -266,13 +266,18 @@ async function syncLinkedInAdsData(supabase: any, account: any, tenantId: string
     const { fetchLinkedInAdsCampaigns, transformLinkedInAdsData } = await import('@/lib/linkedin-ads/client')
     
     const config = {
-      clientId: account.metadata?.client_id,
-      clientSecret: account.metadata?.client_secret,
       accessToken: account.access_token,
+      apiVersion: account.metadata?.api_version,
     }
 
     // Fetch real campaign data from LinkedIn Ads API
     const apiData = await fetchLinkedInAdsCampaigns(config)
+    
+    if (!apiData || apiData.length === 0) {
+      console.log('No LinkedIn campaigns found')
+      return
+    }
+    
     const { campaigns: campaignData, metrics: metricsData } = transformLinkedInAdsData(apiData)
 
     // Insert campaigns into database
