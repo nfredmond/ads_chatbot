@@ -86,6 +86,7 @@ async function syncGoogleAdsData(supabase: any, account: any, tenantId: string) 
       developerToken: account.metadata?.developer_token,
       customerId: account.account_id,
       refreshToken: account.refresh_token,
+      loginCustomerId: account.metadata?.login_customer_id,
     }
 
     // Fetch real campaign data from Google Ads API
@@ -104,15 +105,29 @@ async function syncGoogleAdsData(supabase: any, account: any, tenantId: string) 
       .upsert(campaignsToInsert, { onConflict: 'campaign_id,tenant_id' })
       .select()
 
-    // Insert metrics
-    if (campaigns && metricsData.length > 0) {
-      const metricsToInsert = metricsData.map((m: any, index: number) => ({
-        ...m,
-        tenant_id: tenantId,
-        campaign_id: campaigns[index]?.id,
-      }))
+    // Insert metrics - map API campaign IDs to database IDs
+    if (campaigns && campaigns.length > 0 && metricsData.length > 0) {
+      const campaignIdMap = new Map(campaigns.map((c: any) => [c.campaign_id, c.id]))
+      
+      const metricsToInsert = metricsData
+        .map((m: any) => {
+          const dbCampaignId = campaignIdMap.get(m.campaign_api_id)
+          if (!dbCampaignId) return null
+          
+          // Remove campaign_api_id before inserting
+          const { campaign_api_id, ...metricData } = m
+          
+          return {
+            ...metricData,
+            tenant_id: tenantId,
+            campaign_id: dbCampaignId,
+          }
+        })
+        .filter((m: any) => m !== null)
 
-      await supabase.from('campaign_metrics').upsert(metricsToInsert)
+      if (metricsToInsert.length > 0) {
+        await supabase.from('campaign_metrics').upsert(metricsToInsert)
+      }
     }
   } catch (error) {
     console.error('Google Ads sync error:', error)
@@ -158,11 +173,11 @@ async function createSampleGoogleAdsData(supabase: any, account: any, tenantId: 
 async function syncMetaAdsData(supabase: any, account: any, tenantId: string) {
   try {
     const { fetchMetaAdsCampaigns, transformMetaAdsData } = await import('@/lib/meta-ads/client')
-    
+
     const config = {
-      appId: account.metadata?.app_id,
-      appSecret: account.metadata?.app_secret,
       accessToken: account.access_token,
+      accountId: account.account_id,
+      apiVersion: account.metadata?.api_version,
     }
 
     // Fetch real campaign data from Meta Ads API
@@ -181,15 +196,29 @@ async function syncMetaAdsData(supabase: any, account: any, tenantId: string) {
       .upsert(campaignsToInsert, { onConflict: 'campaign_id,tenant_id' })
       .select()
 
-    // Insert metrics
-    if (campaigns && metricsData.length > 0) {
-      const metricsToInsert = metricsData.map((m: any, index: number) => ({
-        ...m,
-        tenant_id: tenantId,
-        campaign_id: campaigns[index]?.id,
-      }))
+    // Insert metrics - map API campaign IDs to database IDs
+    if (campaigns && campaigns.length > 0 && metricsData.length > 0) {
+      const campaignIdMap = new Map(campaigns.map((c: any) => [c.campaign_id, c.id]))
+      
+      const metricsToInsert = metricsData
+        .map((m: any) => {
+          const dbCampaignId = campaignIdMap.get(m.campaign_api_id)
+          if (!dbCampaignId) return null
+          
+          // Remove campaign_api_id before inserting
+          const { campaign_api_id, ...metricData } = m
+          
+          return {
+            ...metricData,
+            tenant_id: tenantId,
+            campaign_id: dbCampaignId,
+          }
+        })
+        .filter((m: any) => m !== null)
 
-      await supabase.from('campaign_metrics').upsert(metricsToInsert)
+      if (metricsToInsert.length > 0) {
+        await supabase.from('campaign_metrics').upsert(metricsToInsert)
+      }
     }
   } catch (error) {
     console.error('Meta Ads sync error:', error)
@@ -258,15 +287,29 @@ async function syncLinkedInAdsData(supabase: any, account: any, tenantId: string
       .upsert(campaignsToInsert, { onConflict: 'campaign_id,tenant_id' })
       .select()
 
-    // Insert metrics
-    if (campaigns && metricsData.length > 0) {
-      const metricsToInsert = metricsData.map((m: any, index: number) => ({
-        ...m,
-        tenant_id: tenantId,
-        campaign_id: campaigns[index]?.id,
-      }))
+    // Insert metrics - map API campaign IDs to database IDs
+    if (campaigns && campaigns.length > 0 && metricsData.length > 0) {
+      const campaignIdMap = new Map(campaigns.map((c: any) => [c.campaign_id, c.id]))
+      
+      const metricsToInsert = metricsData
+        .map((m: any) => {
+          const dbCampaignId = campaignIdMap.get(m.campaign_api_id)
+          if (!dbCampaignId) return null
+          
+          // Remove campaign_api_id before inserting
+          const { campaign_api_id, ...metricData } = m
+          
+          return {
+            ...metricData,
+            tenant_id: tenantId,
+            campaign_id: dbCampaignId,
+          }
+        })
+        .filter((m: any) => m !== null)
 
-      await supabase.from('campaign_metrics').upsert(metricsToInsert)
+      if (metricsToInsert.length > 0) {
+        await supabase.from('campaign_metrics').upsert(metricsToInsert)
+      }
     }
   } catch (error) {
     console.error('LinkedIn Ads sync error:', error)

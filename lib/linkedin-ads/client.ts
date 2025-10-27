@@ -106,6 +106,7 @@ export function transformLinkedInAdsData(apiData: any[]) {
 
     if (campaign.analytics) {
       metrics.push({
+        campaign_api_id: campaign.id.toString(),
         date: new Date().toISOString().split('T')[0],
         impressions: parseInt(campaign.analytics.impressions) || 0,
         clicks: parseInt(campaign.analytics.clicks) || 0,
