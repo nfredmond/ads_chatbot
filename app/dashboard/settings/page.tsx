@@ -133,8 +133,8 @@ export default function SettingsPage() {
         .eq('id', user?.id)
         .single()
 
-      // Save Google Ads credentials
-      const { error: insertError } = await supabase.from('ad_accounts').insert({
+      // Save Google Ads credentials (upsert to update if already exists)
+      const { error: upsertError } = await supabase.from('ad_accounts').upsert({
         tenant_id: profile?.tenant_id,
         platform: 'google_ads',
         account_id: googleCustomerId,
@@ -145,9 +145,11 @@ export default function SettingsPage() {
           client_secret: googleClientSecret,
           developer_token: googleDeveloperToken,
         },
+      }, {
+        onConflict: 'tenant_id,platform,account_id'
       })
 
-      if (insertError) throw insertError
+      if (upsertError) throw upsertError
 
       setSuccess('Google Ads connected successfully!')
       loadAdAccounts()
@@ -174,8 +176,8 @@ export default function SettingsPage() {
         .eq('id', user?.id)
         .single()
 
-      // Save Meta Ads credentials
-      const { error: insertError } = await supabase.from('ad_accounts').insert({
+      // Save Meta Ads credentials (upsert to update if already exists)
+      const { error: upsertError } = await supabase.from('ad_accounts').upsert({
         tenant_id: profile?.tenant_id,
         platform: 'meta_ads',
         account_id: metaAppId,
@@ -186,9 +188,11 @@ export default function SettingsPage() {
           app_id: metaAppId,
           app_secret: metaAppSecret,
         },
+      }, {
+        onConflict: 'tenant_id,platform,account_id'
       })
 
-      if (insertError) throw insertError
+      if (upsertError) throw upsertError
 
       setSuccess('Meta Ads connected successfully!')
       loadAdAccounts()
@@ -215,8 +219,8 @@ export default function SettingsPage() {
         .eq('id', user?.id)
         .single()
 
-      // Save LinkedIn Ads credentials
-      const { error: insertError } = await supabase.from('ad_accounts').insert({
+      // Save LinkedIn Ads credentials (upsert to update if already exists)
+      const { error: upsertError } = await supabase.from('ad_accounts').upsert({
         tenant_id: profile?.tenant_id,
         platform: 'linkedin_ads',
         account_id: linkedinClientId,
@@ -227,9 +231,11 @@ export default function SettingsPage() {
           client_id: linkedinClientId,
           client_secret: linkedinClientSecret,
         },
+      }, {
+        onConflict: 'tenant_id,platform,account_id'
       })
 
-      if (insertError) throw insertError
+      if (upsertError) throw upsertError
 
       setSuccess('LinkedIn Ads connected successfully!')
       loadAdAccounts()
