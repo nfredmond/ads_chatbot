@@ -45,7 +45,7 @@ class EmailService {
       }
 
       // Create transporter
-      this.transporter = nodemailer.createTransporter({
+      this.transporter = nodemailer.createTransport({
         service: emailService, // e.g., 'gmail', 'sendgrid'
         auth: {
           user: emailUser,

@@ -100,17 +100,18 @@ export function generateEncryptionKey(): string {
 export function encryptFields<T extends Record<string, any>>(
   data: T,
   fieldsToEncrypt: (keyof T)[]
-): T & Record<string, any> {
-  const encrypted = { ...data }
+): Record<string, any> {
+  const encrypted: Record<string, any> = { ...data }
   
   for (const field of fieldsToEncrypt) {
+    const fieldStr = String(field)
     const value = data[field]
     if (value && typeof value === 'string') {
       const encryptedData = encryptToken(value)
-      encrypted[`${String(field)}_encrypted`] = encryptedData.encrypted
-      encrypted[`${String(field)}_iv`] = encryptedData.iv
-      encrypted[`${String(field)}_auth_tag`] = encryptedData.authTag
-      delete encrypted[field]
+      encrypted[`${fieldStr}_encrypted`] = encryptedData.encrypted
+      encrypted[`${fieldStr}_iv`] = encryptedData.iv
+      encrypted[`${fieldStr}_auth_tag`] = encryptedData.authTag
+      delete encrypted[fieldStr]
     }
   }
   
@@ -123,8 +124,8 @@ export function encryptFields<T extends Record<string, any>>(
 export function decryptFields<T extends Record<string, any>>(
   data: T,
   fieldsToDecrypt: string[]
-): T & Record<string, any> {
-  const decrypted = { ...data }
+): Record<string, any> {
+  const decrypted: Record<string, any> = { ...data }
   
   for (const field of fieldsToDecrypt) {
     const encryptedField = `${field}_encrypted`
