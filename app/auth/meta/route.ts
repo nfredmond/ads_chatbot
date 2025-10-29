@@ -9,6 +9,8 @@ const META_LONG_LIVED_URL = 'https://graph.facebook.com/oauth/access_token'
 const META_ACCOUNTS_URL = 'https://graph.facebook.com/v21.0/me/adaccounts'
 
 export async function GET(request: NextRequest) {
+  let user: any = null
+  
   const supabase = await createClient()
   const searchParams = request.nextUrl.searchParams
   const code = searchParams.get('code')
@@ -24,9 +26,9 @@ export async function GET(request: NextRequest) {
 
   // Initiating OAuth flow
   if (!code) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const authResponse = await supabase.auth.getUser()
+    user = authResponse.data.user
+    
     if (!user) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
@@ -94,9 +96,9 @@ export async function GET(request: NextRequest) {
       throw new Error('Invalid state parameter - possible CSRF attack')
     }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const authResponse = await supabase.auth.getUser()
+    user = authResponse.data.user
+    
     if (!user) {
       return NextResponse.redirect(new URL('/login', request.url))
     }

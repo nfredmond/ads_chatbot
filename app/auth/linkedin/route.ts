@@ -8,6 +8,8 @@ const LINKEDIN_TOKEN_URL = 'https://www.linkedin.com/oauth/v2/accessToken'
 const LINKEDIN_ACCOUNTS_URL = 'https://api.linkedin.com/rest/adAccounts'
 
 export async function GET(request: NextRequest) {
+  let user: any = null
+  
   const supabase = await createClient()
   const searchParams = request.nextUrl.searchParams
   const code = searchParams.get('code')
@@ -23,9 +25,9 @@ export async function GET(request: NextRequest) {
 
   // Initiating OAuth flow
   if (!code) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const authResponse = await supabase.auth.getUser()
+    user = authResponse.data.user
+    
     if (!user) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
@@ -93,9 +95,9 @@ export async function GET(request: NextRequest) {
       throw new Error('Invalid state parameter - possible CSRF attack')
     }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const authResponse = await supabase.auth.getUser()
+    user = authResponse.data.user
+    
     if (!user) {
       return NextResponse.redirect(new URL('/login', request.url))
     }

@@ -7,6 +7,8 @@ const GOOGLE_OAUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 
 export async function GET(request: NextRequest) {
+  let user: any = null
+  
   const supabase = await createClient()
   const searchParams = request.nextUrl.searchParams
   const code = searchParams.get('code')
@@ -22,9 +24,9 @@ export async function GET(request: NextRequest) {
 
   // Initiating OAuth flow
   if (!code) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const authResponse = await supabase.auth.getUser()
+    user = authResponse.data.user
+    
     if (!user) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
@@ -97,9 +99,9 @@ export async function GET(request: NextRequest) {
       throw new Error('Invalid state parameter - possible CSRF attack')
     }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const authResponse = await supabase.auth.getUser()
+    user = authResponse.data.user
+    
     if (!user) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
