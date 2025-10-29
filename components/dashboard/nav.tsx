@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { BarChart3, MessageSquare, Settings, LogOut } from 'lucide-react'
+import { BarChart3, MessageSquare, Settings, LogOut, BookOpen } from 'lucide-react'
 import Link from 'next/link'
 import { ThemeToggle } from '@/components/theme-toggle'
 
@@ -79,6 +79,12 @@ export function DashboardNav({ user }: DashboardNavProps) {
                 <Link href="/dashboard/settings">
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/setup">
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  <span>Setup Guides</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleSignOut}>

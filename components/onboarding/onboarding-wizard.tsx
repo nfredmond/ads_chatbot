@@ -241,38 +241,27 @@ export function OnboardingWizard({ userId, userEmail }: OnboardingWizardProps) {
               </div>
 
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <h4 className="font-medium text-sm mb-2 flex items-center">
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  How to get your Google Ads credentials:
-                </h4>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-sm flex items-center">
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Need help getting credentials?
+                  </h4>
+                  <a href="/setup/google-ads" target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" size="sm" className="text-xs">
+                      View Full Guide
+                    </Button>
+                  </a>
+                </div>
                 <ol className="text-xs space-y-1 text-gray-700 dark:text-gray-300 list-decimal list-inside">
-                  <li>
-                    Go to{' '}
-                    <a
-                      href="https://console.cloud.google.com"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      Google Cloud Console
-                    </a>
-                  </li>
-                  <li>Create a new project or select an existing one</li>
-                  <li>Enable the Google Ads API</li>
-                  <li>Create OAuth 2.0 credentials (Client ID & Secret)</li>
-                  <li>
-                    Apply for a Developer Token at{' '}
-                    <a
-                      href="https://ads.google.com/aw/apicenter"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      Google Ads API Center
-                    </a>
-                  </li>
-                  <li>Find your Customer ID in Google Ads (top right corner)</li>
+                  <li>Create Google Ads Manager Account (MCC) - <strong>required!</strong></li>
+                  <li>Enable Google Ads API in Cloud Console</li>
+                  <li>Create OAuth 2.0 credentials</li>
+                  <li>Request Developer Token from API Center</li>
+                  <li>Find Customer ID in your account (top right)</li>
                 </ol>
+                <p className="text-xs text-gray-500 mt-2 italic">
+                  ⚠️ Standard accounts cannot get developer tokens - MCC required
+                </p>
               </div>
 
               <div className="space-y-3">
@@ -341,38 +330,27 @@ export function OnboardingWizard({ userId, userEmail }: OnboardingWizardProps) {
                 </p>
               </div>
 
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <h4 className="font-medium text-sm mb-2 flex items-center">
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  How to get your Meta Ads credentials:
-                </h4>
+              <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-sm flex items-center">
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Need help getting credentials?
+                  </h4>
+                  <a href="/setup/meta-ads" target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" size="sm" className="text-xs">
+                      View Full Guide
+                    </Button>
+                  </a>
+                </div>
                 <ol className="text-xs space-y-1 text-gray-700 dark:text-gray-300 list-decimal list-inside">
-                  <li>
-                    Go to{' '}
-                    <a
-                      href="https://developers.facebook.com/apps"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      Meta for Developers
-                    </a>
-                  </li>
-                  <li>Create a new app or select an existing one</li>
-                  <li>Add the Marketing API to your app</li>
-                  <li>Copy your App ID and App Secret from Settings → Basic</li>
-                  <li>
-                    Generate a long-lived access token using the{' '}
-                    <a
-                      href="https://developers.facebook.com/tools/explorer/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      Graph API Explorer
-                    </a>
-                  </li>
+                  <li>Create Business-type app at Meta for Developers</li>
+                  <li>Add Marketing API product to your app</li>
+                  <li>Copy App ID and App Secret from Settings → Basic</li>
+                  <li>Request Advanced Access (1-2 weeks approval)</li>
                 </ol>
+                <p className="text-xs text-gray-500 mt-2 italic">
+                  💡 OAuth will auto-fetch your ad account - no manual token needed!
+                </p>
               </div>
 
               <div className="space-y-3">
@@ -432,39 +410,28 @@ export function OnboardingWizard({ userId, userEmail }: OnboardingWizardProps) {
                 </p>
               </div>
 
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <h4 className="font-medium text-sm mb-2 flex items-center">
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  How to get your LinkedIn Ads credentials:
-                </h4>
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-sm flex items-center">
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Need help getting credentials?
+                  </h4>
+                  <a href="/setup/linkedin-ads" target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" size="sm" className="text-xs">
+                      View Full Guide
+                    </Button>
+                  </a>
+                </div>
                 <ol className="text-xs space-y-1 text-gray-700 dark:text-gray-300 list-decimal list-inside">
-                  <li>
-                    Go to{' '}
-                    <a
-                      href="https://www.linkedin.com/developers/apps"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      LinkedIn Developers
-                    </a>
-                  </li>
-                  <li>Create a new app or select an existing one</li>
-                  <li>Request access to the Marketing Developer Platform</li>
-                  <li>Copy your Client ID and Client Secret from Auth tab</li>
-                  <li>Generate an OAuth 2.0 access token</li>
-                  <li>
-                    See{' '}
-                    <a
-                      href="https://learn.microsoft.com/en-us/linkedin/marketing/getting-started"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      getting started guide
-                    </a>
-                  </li>
+                  <li>Create app at LinkedIn Developers</li>
+                  <li>Associate with verified Company Page</li>
+                  <li>Request Marketing Developer Platform access</li>
+                  <li>Wait for approval (weeks to months)</li>
+                  <li>Copy Client ID and Secret from Auth tab</li>
                 </ol>
+                <p className="text-xs text-gray-500 mt-2 italic">
+                  ⚠️ Longest approval process - apply early! OAuth auto-fetches account.
+                </p>
               </div>
 
               <div className="space-y-3">

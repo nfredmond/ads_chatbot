@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -47,6 +48,23 @@ export default function SettingsPage() {
   useEffect(() => {
     loadProfile()
     loadAdAccounts()
+    
+    // Check for OAuth success/error in URL params
+    const urlParams = new URLSearchParams(window.location.search)
+    const successMessage = urlParams.get('success')
+    const errorMessage = urlParams.get('error')
+    
+    if (successMessage) {
+      setSuccess(successMessage)
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+    
+    if (errorMessage) {
+      setError(errorMessage)
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname)
+    }
   }, [])
 
   const loadProfile = async () => {
@@ -133,13 +151,17 @@ export default function SettingsPage() {
         .eq('id', user?.id)
         .single()
 
-      // Save Google Ads credentials (upsert to update if already exists)
+      if (!googleClientId || !googleClientSecret || !googleDeveloperToken || !googleCustomerId) {
+        throw new Error('Please fill in all required Google Ads credentials')
+      }
+
+      // Save credentials first (without tokens - they'll be added via OAuth)
       const { error: upsertError } = await supabase.from('ad_accounts').upsert({
         tenant_id: profile?.tenant_id,
         platform: 'google_ads',
         account_id: googleCustomerId,
         account_name: 'Google Ads Account',
-        status: 'active',
+        status: 'pending',
         metadata: {
           client_id: googleClientId,
           client_secret: googleClientSecret,
@@ -151,11 +173,10 @@ export default function SettingsPage() {
 
       if (upsertError) throw upsertError
 
-      setSuccess('Google Ads connected successfully!')
-      loadAdAccounts()
+      // Redirect to OAuth flow
+      window.location.href = '/auth/google'
     } catch (err: any) {
       setError(err.message)
-    } finally {
       setLoading(false)
     }
   }
@@ -176,14 +197,17 @@ export default function SettingsPage() {
         .eq('id', user?.id)
         .single()
 
-      // Save Meta Ads credentials (upsert to update if already exists)
+      if (!metaAppId || !metaAppSecret) {
+        throw new Error('Please fill in all required Meta Ads credentials')
+      }
+
+      // Save app credentials first (account_id and tokens will be set via OAuth)
       const { error: upsertError } = await supabase.from('ad_accounts').upsert({
         tenant_id: profile?.tenant_id,
         platform: 'meta_ads',
-        account_id: metaAppId,
+        account_id: metaAppId, // Temporary, will be replaced with actual account ID
         account_name: 'Meta Ads Account',
-        access_token: metaAccessToken,
-        status: 'active',
+        status: 'pending',
         metadata: {
           app_id: metaAppId,
           app_secret: metaAppSecret,
@@ -194,11 +218,10 @@ export default function SettingsPage() {
 
       if (upsertError) throw upsertError
 
-      setSuccess('Meta Ads connected successfully!')
-      loadAdAccounts()
+      // Redirect to OAuth flow
+      window.location.href = '/auth/meta'
     } catch (err: any) {
       setError(err.message)
-    } finally {
       setLoading(false)
     }
   }
@@ -219,14 +242,17 @@ export default function SettingsPage() {
         .eq('id', user?.id)
         .single()
 
-      // Save LinkedIn Ads credentials (upsert to update if already exists)
+      if (!linkedinClientId || !linkedinClientSecret) {
+        throw new Error('Please fill in all required LinkedIn Ads credentials')
+      }
+
+      // Save app credentials first (account_id and token will be set via OAuth)
       const { error: upsertError } = await supabase.from('ad_accounts').upsert({
         tenant_id: profile?.tenant_id,
         platform: 'linkedin_ads',
-        account_id: linkedinClientId,
+        account_id: linkedinClientId, // Temporary, will be replaced with actual account ID
         account_name: 'LinkedIn Ads Account',
-        access_token: linkedinAccessToken,
-        status: 'active',
+        status: 'pending',
         metadata: {
           client_id: linkedinClientId,
           client_secret: linkedinClientSecret,
@@ -237,11 +263,10 @@ export default function SettingsPage() {
 
       if (upsertError) throw upsertError
 
-      setSuccess('LinkedIn Ads connected successfully!')
-      loadAdAccounts()
+      // Redirect to OAuth flow
+      window.location.href = '/auth/linkedin'
     } catch (err: any) {
       setError(err.message)
-    } finally {
       setLoading(false)
     }
   }
@@ -480,20 +505,24 @@ export default function SettingsPage() {
                   onChange={(e) => setGoogleCustomerId(e.target.value)}
                 />
               </div>
-              <p className="text-xs text-gray-500">
-                Learn how to get credentials:{' '}
-                <a
-                  href="https://developers.google.com/google-ads/api/docs/first-call/overview"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
-                >
-                  Google Ads API Documentation
-                </a>
-              </p>
+              <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                <p className="text-xs text-gray-700 dark:text-gray-300">
+                  <strong>Need help getting credentials?</strong>
+                </p>
+                <Link href="/setup/google-ads">
+                  <Button variant="outline" size="sm" className="text-xs">
+                    View Setup Guide
+                  </Button>
+                </Link>
+              </div>
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-4">
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                  <strong>Note:</strong> After saving credentials, click "Connect Google Ads" to complete OAuth authentication. You'll be redirected to Google to authorize access.
+                </p>
+              </div>
               <Button onClick={handleConnectGoogleAds} disabled={loading}>
                 <LinkIcon className="w-4 h-4 mr-2" />
-                Connect Google Ads
+                Connect Google Ads (OAuth)
               </Button>
             </CardContent>
           </Card>
@@ -525,30 +554,24 @@ export default function SettingsPage() {
                   onChange={(e) => setMetaAppSecret(e.target.value)}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="meta-access-token">Access Token</Label>
-                <Input
-                  id="meta-access-token"
-                  type="password"
-                  placeholder="Long-lived Access Token"
-                  value={metaAccessToken}
-                  onChange={(e) => setMetaAccessToken(e.target.value)}
-                />
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                  <strong>Note:</strong> After saving your App ID and Secret, click "Connect Meta Ads" to complete OAuth authentication. The access token will be obtained automatically.
+                </p>
               </div>
-              <p className="text-xs text-gray-500">
-                Learn how to get credentials:{' '}
-                <a
-                  href="https://developers.facebook.com/docs/marketing-api/get-started"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
-                >
-                  Meta Marketing API Documentation
-                </a>
-              </p>
+              <div className="flex items-center justify-between bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
+                <p className="text-xs text-gray-700 dark:text-gray-300">
+                  <strong>Need help getting credentials?</strong>
+                </p>
+                <Link href="/setup/meta-ads">
+                  <Button variant="outline" size="sm" className="text-xs">
+                    View Setup Guide
+                  </Button>
+                </Link>
+              </div>
               <Button onClick={handleConnectMetaAds} disabled={loading}>
                 <LinkIcon className="w-4 h-4 mr-2" />
-                Connect Meta Ads
+                Connect Meta Ads (OAuth)
               </Button>
             </CardContent>
           </Card>
@@ -580,30 +603,24 @@ export default function SettingsPage() {
                   onChange={(e) => setLinkedinClientSecret(e.target.value)}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="linkedin-access-token">Access Token</Label>
-                <Input
-                  id="linkedin-access-token"
-                  type="password"
-                  placeholder="OAuth 2.0 Access Token"
-                  value={linkedinAccessToken}
-                  onChange={(e) => setLinkedinAccessToken(e.target.value)}
-                />
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                  <strong>Note:</strong> After saving your Client ID and Secret, click "Connect LinkedIn Ads" to complete OAuth authentication. The access token will be obtained automatically.
+                </p>
               </div>
-              <p className="text-xs text-gray-500">
-                Learn how to get credentials:{' '}
-                <a
-                  href="https://learn.microsoft.com/en-us/linkedin/marketing/getting-started"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
-                >
-                  LinkedIn Marketing API Documentation
-                </a>
-              </p>
+              <div className="flex items-center justify-between bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3">
+                <p className="text-xs text-gray-700 dark:text-gray-300">
+                  <strong>Need help getting credentials?</strong>
+                </p>
+                <Link href="/setup/linkedin-ads">
+                  <Button variant="outline" size="sm" className="text-xs">
+                    View Setup Guide
+                  </Button>
+                </Link>
+              </div>
               <Button onClick={handleConnectLinkedInAds} disabled={loading}>
                 <LinkIcon className="w-4 h-4 mr-2" />
-                Connect LinkedIn Ads
+                Connect LinkedIn Ads (OAuth)
               </Button>
             </CardContent>
           </Card>

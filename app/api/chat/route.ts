@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
+import logger from '@/lib/logging/logger'
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
@@ -59,6 +60,13 @@ export async function POST(request: NextRequest) {
     const avgROAS = totalSpend > 0 ? totalRevenue / totalSpend : 0
 
     const hasData = campaigns && campaigns.length > 0
+
+    logger.info('Chat request received', {
+      userId: user.id,
+      hasData,
+      campaignCount: campaigns?.length || 0,
+      connectedPlatforms: adAccounts?.length || 0,
+    })
 
     // Build context for Claude
     const systemPrompt = `You are an AI marketing analytics assistant helping ${profile?.full_name || user.email} analyze their advertising campaign performance across Google Ads, Meta Ads, and LinkedIn Ads.
@@ -205,9 +213,14 @@ You should:
       // Continue even if saving fails
     }
 
+    logger.info('Chat response generated successfully', {
+      userId: user.id,
+      responseLength: assistantMessage.length,
+    })
+
     return NextResponse.json({ message: assistantMessage })
   } catch (error: any) {
-    console.error('Chat API error:', error)
+    logger.error('Chat API error', { error, userId: user?.id })
     return NextResponse.json(
       { error: 'Failed to process chat message', details: error.message },
       { status: 500 }

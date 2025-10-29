@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import logger, { logSyncOperation } from '@/lib/logging/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,16 +41,53 @@ export async function POST(request: NextRequest) {
 
     // Sync data from each platform
     for (const account of adAccounts) {
+      const startTime = Date.now()
+      
       try {
+        logSyncOperation(account.platform, 'started', { userId: user.id })
+
         if (account.platform === 'google_ads') {
-          await syncGoogleAdsData(supabase, account, profile.tenant_id)
-          syncResults.push({ platform: 'google_ads', status: 'success' })
+          const result = await syncGoogleAdsData(supabase, account, profile.tenant_id)
+          logSyncOperation(account.platform, 'completed', {
+            userId: user.id,
+            campaignsCount: result?.campaignsCount || 0,
+            metricsCount: result?.metricsCount || 0,
+            duration: Date.now() - startTime,
+          })
+          syncResults.push({ 
+            platform: 'google_ads', 
+            status: 'success',
+            campaigns: result?.campaignsCount || 0,
+            metrics: result?.metricsCount || 0,
+          })
         } else if (account.platform === 'meta_ads') {
-          await syncMetaAdsData(supabase, account, profile.tenant_id)
-          syncResults.push({ platform: 'meta_ads', status: 'success' })
+          const result = await syncMetaAdsData(supabase, account, profile.tenant_id)
+          logSyncOperation(account.platform, 'completed', {
+            userId: user.id,
+            campaignsCount: result?.campaignsCount || 0,
+            metricsCount: result?.metricsCount || 0,
+            duration: Date.now() - startTime,
+          })
+          syncResults.push({ 
+            platform: 'meta_ads', 
+            status: 'success',
+            campaigns: result?.campaignsCount || 0,
+            metrics: result?.metricsCount || 0,
+          })
         } else if (account.platform === 'linkedin_ads') {
-          await syncLinkedInAdsData(supabase, account, profile.tenant_id)
-          syncResults.push({ platform: 'linkedin_ads', status: 'success' })
+          const result = await syncLinkedInAdsData(supabase, account, profile.tenant_id)
+          logSyncOperation(account.platform, 'completed', {
+            userId: user.id,
+            campaignsCount: result?.campaignsCount || 0,
+            metricsCount: result?.metricsCount || 0,
+            duration: Date.now() - startTime,
+          })
+          syncResults.push({ 
+            platform: 'linkedin_ads', 
+            status: 'success',
+            campaigns: result?.campaignsCount || 0,
+            metrics: result?.metricsCount || 0,
+          })
         }
 
         // Update last synced time
@@ -58,7 +96,12 @@ export async function POST(request: NextRequest) {
           .update({ last_synced_at: new Date().toISOString() })
           .eq('id', account.id)
       } catch (err: any) {
-        console.error(`Error syncing ${account.platform}:`, err)
+        logger.error(`Error syncing ${account.platform}:`, { error: err, userId: user.id })
+        logSyncOperation(account.platform, 'failed', {
+          userId: user.id,
+          error: err,
+          duration: Date.now() - startTime,
+        })
         syncResults.push({ platform: account.platform, status: 'error', message: err.message })
       }
     }
@@ -77,283 +120,210 @@ export async function POST(request: NextRequest) {
 }
 
 async function syncGoogleAdsData(supabase: any, account: any, tenantId: string) {
-  try {
-    const { fetchGoogleAdsCampaigns, transformGoogleAdsData } = await import('@/lib/google-ads/client')
-    
-    const config = {
-      clientId: account.metadata?.client_id,
-      clientSecret: account.metadata?.client_secret,
-      developerToken: account.metadata?.developer_token,
-      customerId: account.account_id,
-      refreshToken: account.refresh_token,
-      loginCustomerId: account.metadata?.login_customer_id,
-    }
-
-    // Fetch real campaign data from Google Ads API
-    const apiData = await fetchGoogleAdsCampaigns(config)
-    const { campaigns: campaignData, metrics: metricsData } = transformGoogleAdsData(apiData)
-
-    // Insert campaigns into database
-    const campaignsToInsert = campaignData.map((c: any) => ({
-      ...c,
-      tenant_id: tenantId,
-      ad_account_id: account.id,
-    }))
-
-    const { data: campaigns } = await supabase
-      .from('campaigns')
-      .upsert(campaignsToInsert, { onConflict: 'campaign_id,tenant_id' })
-      .select()
-
-    // Insert metrics - map API campaign IDs to database IDs
-    if (campaigns && campaigns.length > 0 && metricsData.length > 0) {
-      const campaignIdMap = new Map(campaigns.map((c: any) => [c.campaign_id, c.id]))
-      
-      const metricsToInsert = metricsData
-        .map((m: any) => {
-          const dbCampaignId = campaignIdMap.get(m.campaign_api_id)
-          if (!dbCampaignId) return null
-          
-          // Remove campaign_api_id before inserting
-          const { campaign_api_id, ...metricData } = m
-          
-          return {
-            ...metricData,
-            tenant_id: tenantId,
-            campaign_id: dbCampaignId,
-          }
-        })
-        .filter((m: any) => m !== null)
-
-      if (metricsToInsert.length > 0) {
-        await supabase.from('campaign_metrics').upsert(metricsToInsert)
-      }
-    }
-  } catch (error) {
-    console.error('Google Ads sync error:', error)
-    // Fall back to sample data if API fails
-    await createSampleGoogleAdsData(supabase, account, tenantId)
+  const { fetchGoogleAdsCampaigns, transformGoogleAdsData } = await import('@/lib/google-ads/client')
+  
+  if (!account.refresh_token) {
+    throw new Error('Google Ads refresh token missing. Please reconnect your account.')
   }
-}
 
-async function createSampleGoogleAdsData(supabase: any, account: any, tenantId: string) {
-  const sampleCampaigns = [
-    {
-      tenant_id: tenantId,
-      ad_account_id: account.id,
-      campaign_id: `google-${Date.now()}`,
-      campaign_name: 'Summer Sale 2025 (Sample)',
-      platform: 'google_ads',
-      status: 'active',
-      budget_amount: 5000,
-    },
-  ]
+  if (!account.metadata?.client_id || !account.metadata?.client_secret || !account.metadata?.developer_token) {
+    throw new Error('Google Ads credentials incomplete. Please reconfigure in settings.')
+  }
+
+  const config = {
+    clientId: account.metadata.client_id,
+    clientSecret: account.metadata.client_secret,
+    developerToken: account.metadata.developer_token,
+    customerId: account.account_id,
+    refreshToken: account.refresh_token,
+    loginCustomerId: account.metadata?.login_customer_id,
+  }
+
+  // Fetch real campaign data from Google Ads API
+  const apiData = await fetchGoogleAdsCampaigns(config)
+  const { campaigns: campaignData, metrics: metricsData } = transformGoogleAdsData(apiData)
+
+  if (campaignData.length === 0) {
+    logger.info('No Google Ads campaigns found for this account')
+    return { campaignsCount: 0, metricsCount: 0 }
+  }
+
+  // Insert campaigns into database
+  const campaignsToInsert = campaignData.map((c: any) => ({
+    ...c,
+    tenant_id: tenantId,
+    ad_account_id: account.id,
+  }))
 
   const { data: campaigns } = await supabase
     .from('campaigns')
-    .insert(sampleCampaigns)
+    .upsert(campaignsToInsert, { onConflict: 'campaign_id,tenant_id' })
     .select()
 
-  if (campaigns) {
-    const sampleMetrics = campaigns.map((campaign: any) => ({
-      tenant_id: tenantId,
-      campaign_id: campaign.id,
-      date: new Date().toISOString().split('T')[0],
-      impressions: Math.floor(Math.random() * 50000) + 10000,
-      clicks: Math.floor(Math.random() * 1000) + 100,
-      conversions: Math.floor(Math.random() * 50) + 10,
-      spend: Math.floor(Math.random() * 2000) + 500,
-      revenue: Math.floor(Math.random() * 10000) + 2000,
-    }))
+  // Insert metrics - map API campaign IDs to database IDs
+  let metricsInserted = 0
+  if (campaigns && campaigns.length > 0 && metricsData.length > 0) {
+    const campaignIdMap = new Map(campaigns.map((c: any) => [c.campaign_id, c.id]))
+    
+    const metricsToInsert = metricsData
+      .map((m: any) => {
+        const dbCampaignId = campaignIdMap.get(m.campaign_api_id)
+        if (!dbCampaignId) return null
+        
+        // Remove campaign_api_id before inserting
+        const { campaign_api_id, ...metricData } = m
+        
+        return {
+          ...metricData,
+          tenant_id: tenantId,
+          campaign_id: dbCampaignId,
+        }
+      })
+      .filter((m: any) => m !== null)
 
-    await supabase.from('campaign_metrics').insert(sampleMetrics)
+    if (metricsToInsert.length > 0) {
+      await supabase.from('campaign_metrics').upsert(metricsToInsert)
+      metricsInserted = metricsToInsert.length
+    }
   }
+
+  return { campaignsCount: campaigns?.length || 0, metricsCount: metricsInserted }
 }
+
 
 async function syncMetaAdsData(supabase: any, account: any, tenantId: string) {
-  try {
-    const { fetchMetaAdsCampaigns, transformMetaAdsData } = await import('@/lib/meta-ads/client')
+  const { fetchMetaAdsCampaigns, transformMetaAdsData } = await import('@/lib/meta-ads/client')
 
-    const config = {
-      accessToken: account.access_token,
-      accountId: account.account_id,
-      apiVersion: account.metadata?.api_version,
-    }
-
-    // Fetch real campaign data from Meta Ads API
-    const apiData = await fetchMetaAdsCampaigns(config)
-    const { campaigns: campaignData, metrics: metricsData } = transformMetaAdsData(apiData)
-
-    // Insert campaigns into database
-    const campaignsToInsert = campaignData.map((c: any) => ({
-      ...c,
-      tenant_id: tenantId,
-      ad_account_id: account.id,
-    }))
-
-    const { data: campaigns } = await supabase
-      .from('campaigns')
-      .upsert(campaignsToInsert, { onConflict: 'campaign_id,tenant_id' })
-      .select()
-
-    // Insert metrics - map API campaign IDs to database IDs
-    if (campaigns && campaigns.length > 0 && metricsData.length > 0) {
-      const campaignIdMap = new Map(campaigns.map((c: any) => [c.campaign_id, c.id]))
-      
-      const metricsToInsert = metricsData
-        .map((m: any) => {
-          const dbCampaignId = campaignIdMap.get(m.campaign_api_id)
-          if (!dbCampaignId) return null
-          
-          // Remove campaign_api_id before inserting
-          const { campaign_api_id, ...metricData } = m
-          
-          return {
-            ...metricData,
-            tenant_id: tenantId,
-            campaign_id: dbCampaignId,
-          }
-        })
-        .filter((m: any) => m !== null)
-
-      if (metricsToInsert.length > 0) {
-        await supabase.from('campaign_metrics').upsert(metricsToInsert)
-      }
-    }
-  } catch (error) {
-    console.error('Meta Ads sync error:', error)
-    // Fall back to sample data if API fails
-    await createSampleMetaAdsData(supabase, account, tenantId)
+  if (!account.access_token) {
+    throw new Error('Meta Ads access token missing. Please reconnect your account.')
   }
-}
 
-async function createSampleMetaAdsData(supabase: any, account: any, tenantId: string) {
-  const sampleCampaigns = [
-    {
-      tenant_id: tenantId,
-      ad_account_id: account.id,
-      campaign_id: `meta-${Date.now()}`,
-      campaign_name: 'Facebook Brand Awareness (Sample)',
-      platform: 'meta_ads',
-      status: 'active',
-      budget_amount: 3000,
-    },
-  ]
+  const config = {
+    accessToken: account.access_token,
+    accountId: account.account_id,
+    apiVersion: account.metadata?.api_version,
+    appSecret: account.metadata?.app_secret, // Pass app secret for App Secret Proof
+  }
+
+  // Fetch real campaign data from Meta Ads API
+  const apiData = await fetchMetaAdsCampaigns(config)
+  const { campaigns: campaignData, metrics: metricsData } = transformMetaAdsData(apiData)
+
+  if (campaignData.length === 0) {
+    logger.info('No Meta Ads campaigns found for this account')
+    return { campaignsCount: 0, metricsCount: 0 }
+  }
+
+  // Insert campaigns into database
+  const campaignsToInsert = campaignData.map((c: any) => ({
+    ...c,
+    tenant_id: tenantId,
+    ad_account_id: account.id,
+  }))
 
   const { data: campaigns } = await supabase
     .from('campaigns')
-    .insert(sampleCampaigns)
+    .upsert(campaignsToInsert, { onConflict: 'campaign_id,tenant_id' })
     .select()
 
-  if (campaigns) {
-    const sampleMetrics = campaigns.map((campaign: any) => ({
-      tenant_id: tenantId,
-      campaign_id: campaign.id,
-      date: new Date().toISOString().split('T')[0],
-      impressions: Math.floor(Math.random() * 40000) + 8000,
-      clicks: Math.floor(Math.random() * 800) + 80,
-      conversions: Math.floor(Math.random() * 40) + 8,
-      spend: Math.floor(Math.random() * 1500) + 400,
-      revenue: Math.floor(Math.random() * 8000) + 1500,
-    }))
+  // Insert metrics - map API campaign IDs to database IDs
+  let metricsInserted = 0
+  if (campaigns && campaigns.length > 0 && metricsData.length > 0) {
+    const campaignIdMap = new Map(campaigns.map((c: any) => [c.campaign_id, c.id]))
+    
+    const metricsToInsert = metricsData
+      .map((m: any) => {
+        const dbCampaignId = campaignIdMap.get(m.campaign_api_id)
+        if (!dbCampaignId) return null
+        
+        // Remove campaign_api_id before inserting
+        const { campaign_api_id, ...metricData } = m
+        
+        return {
+          ...metricData,
+          tenant_id: tenantId,
+          campaign_id: dbCampaignId,
+        }
+      })
+      .filter((m: any) => m !== null)
 
-    await supabase.from('campaign_metrics').insert(sampleMetrics)
+    if (metricsToInsert.length > 0) {
+      await supabase.from('campaign_metrics').upsert(metricsToInsert)
+      metricsInserted = metricsToInsert.length
+    }
   }
+
+  return { campaignsCount: campaigns?.length || 0, metricsCount: metricsInserted }
 }
+
 
 async function syncLinkedInAdsData(supabase: any, account: any, tenantId: string) {
-  try {
-    const { fetchLinkedInAdsCampaigns, transformLinkedInAdsData } = await import('@/lib/linkedin-ads/client')
-    
-    const config = {
-      accessToken: account.access_token,
-      apiVersion: account.metadata?.api_version,
-    }
-
-    // Fetch real campaign data from LinkedIn Ads API
-    const apiData = await fetchLinkedInAdsCampaigns(config)
-    
-    if (!apiData || apiData.length === 0) {
-      console.log('No LinkedIn campaigns found')
-      return
-    }
-    
-    const { campaigns: campaignData, metrics: metricsData } = transformLinkedInAdsData(apiData)
-
-    // Insert campaigns into database
-    const campaignsToInsert = campaignData.map((c: any) => ({
-      ...c,
-      tenant_id: tenantId,
-      ad_account_id: account.id,
-    }))
-
-    const { data: campaigns } = await supabase
-      .from('campaigns')
-      .upsert(campaignsToInsert, { onConflict: 'campaign_id,tenant_id' })
-      .select()
-
-    // Insert metrics - map API campaign IDs to database IDs
-    if (campaigns && campaigns.length > 0 && metricsData.length > 0) {
-      const campaignIdMap = new Map(campaigns.map((c: any) => [c.campaign_id, c.id]))
-      
-      const metricsToInsert = metricsData
-        .map((m: any) => {
-          const dbCampaignId = campaignIdMap.get(m.campaign_api_id)
-          if (!dbCampaignId) return null
-          
-          // Remove campaign_api_id before inserting
-          const { campaign_api_id, ...metricData } = m
-          
-          return {
-            ...metricData,
-            tenant_id: tenantId,
-            campaign_id: dbCampaignId,
-          }
-        })
-        .filter((m: any) => m !== null)
-
-      if (metricsToInsert.length > 0) {
-        await supabase.from('campaign_metrics').upsert(metricsToInsert)
-      }
-    }
-  } catch (error) {
-    console.error('LinkedIn Ads sync error:', error)
-    // Fall back to sample data if API fails
-    await createSampleLinkedInAdsData(supabase, account, tenantId)
+  const { fetchLinkedInAdsCampaigns, transformLinkedInAdsData } = await import('@/lib/linkedin-ads/client')
+  
+  if (!account.access_token) {
+    throw new Error('LinkedIn Ads access token missing. Please reconnect your account.')
   }
-}
 
-async function createSampleLinkedInAdsData(supabase: any, account: any, tenantId: string) {
-  const sampleCampaigns = [
-    {
-      tenant_id: tenantId,
-      ad_account_id: account.id,
-      campaign_id: `linkedin-${Date.now()}`,
-      campaign_name: 'B2B Lead Generation (Sample)',
-      platform: 'linkedin_ads',
-      status: 'active',
-      budget_amount: 2500,
-    },
-  ]
+  const config = {
+    accessToken: account.access_token,
+    apiVersion: account.metadata?.api_version,
+  }
+
+  // Fetch real campaign data from LinkedIn Ads API
+  const apiData = await fetchLinkedInAdsCampaigns(config)
+  
+  if (!apiData || apiData.length === 0) {
+    logger.info('No LinkedIn campaigns found for this account')
+    return { campaignsCount: 0, metricsCount: 0 }
+  }
+  
+  const { campaigns: campaignData, metrics: metricsData } = transformLinkedInAdsData(apiData)
+
+  if (campaignData.length === 0) {
+    logger.info('No LinkedIn Ads campaigns found for this account')
+    return { campaignsCount: 0, metricsCount: 0 }
+  }
+
+  // Insert campaigns into database
+  const campaignsToInsert = campaignData.map((c: any) => ({
+    ...c,
+    tenant_id: tenantId,
+    ad_account_id: account.id,
+  }))
 
   const { data: campaigns } = await supabase
     .from('campaigns')
-    .insert(sampleCampaigns)
+    .upsert(campaignsToInsert, { onConflict: 'campaign_id,tenant_id' })
     .select()
 
-  if (campaigns) {
-    const sampleMetrics = campaigns.map((campaign: any) => ({
-      tenant_id: tenantId,
-      campaign_id: campaign.id,
-      date: new Date().toISOString().split('T')[0],
-      impressions: Math.floor(Math.random() * 20000) + 5000,
-      clicks: Math.floor(Math.random() * 400) + 50,
-      conversions: Math.floor(Math.random() * 30) + 5,
-      spend: Math.floor(Math.random() * 1000) + 300,
-      revenue: Math.floor(Math.random() * 5000) + 1000,
-    }))
+  // Insert metrics - map API campaign IDs to database IDs
+  let metricsInserted = 0
+  if (campaigns && campaigns.length > 0 && metricsData.length > 0) {
+    const campaignIdMap = new Map(campaigns.map((c: any) => [c.campaign_id, c.id]))
+    
+    const metricsToInsert = metricsData
+      .map((m: any) => {
+        const dbCampaignId = campaignIdMap.get(m.campaign_api_id)
+        if (!dbCampaignId) return null
+        
+        // Remove campaign_api_id before inserting
+        const { campaign_api_id, ...metricData } = m
+        
+        return {
+          ...metricData,
+          tenant_id: tenantId,
+          campaign_id: dbCampaignId,
+        }
+      })
+      .filter((m: any) => m !== null)
 
-    await supabase.from('campaign_metrics').insert(sampleMetrics)
+    if (metricsToInsert.length > 0) {
+      await supabase.from('campaign_metrics').upsert(metricsToInsert)
+      metricsInserted = metricsToInsert.length
+    }
   }
+
+  return { campaignsCount: campaigns?.length || 0, metricsCount: metricsInserted }
 }
+
 

@@ -10,7 +10,10 @@
  * Uses Rest.li Protocol 2.0.0 with LinkedIn-specific headers.
  */
 
-const DEFAULT_API_VERSION = '202410'
+import logger, { PlatformAPIError, logAPISuccess } from '../logging/logger'
+import { withRateLimit } from '../rate-limiting/limiter'
+
+const DEFAULT_API_VERSION = '202505'
 const LINKEDIN_API_BASE = 'https://api.linkedin.com'
 
 export interface LinkedInAdsConfig {
@@ -56,23 +59,34 @@ export async function fetchLinkedInAdsCampaigns(config: LinkedInAdsConfig) {
   const apiVersion = config.apiVersion ?? DEFAULT_API_VERSION
   const headers = getLinkedInHeaders(config.accessToken, apiVersion)
 
+  logger.info('Fetching LinkedIn Ads campaigns')
+
   // Step 1: Fetch ad accounts using Rest.li finder method
   const accountsUrl = `${LINKEDIN_API_BASE}/rest/adAccounts?q=search&search=(status:(values:List(ACTIVE,DRAFT)))`
-  const accountsResponse = await fetch(accountsUrl, {
-    method: 'GET',
-    headers: {
-      ...headers,
-      'X-RestLi-Method': 'finder',
-    },
+  
+  const accountsData = await withRateLimit('linkedin_ads', async () => {
+    const accountsResponse = await fetch(accountsUrl, {
+      method: 'GET',
+      headers: {
+        ...headers,
+        'X-RestLi-Method': 'finder',
+      },
+    })
+
+    if (!accountsResponse.ok) {
+      const error = await accountsResponse.json().catch(() => ({}))
+      const errorMessage = error.message || error.error_description || accountsResponse.statusText
+      throw new PlatformAPIError(
+        'linkedin_ads',
+        'fetchAdAccounts',
+        new Error(errorMessage),
+        accountsResponse.status,
+        error.code?.toString()
+      )
+    }
+
+    return await accountsResponse.json()
   })
-
-  if (!accountsResponse.ok) {
-    const error = await accountsResponse.json().catch(() => ({}))
-    const errorMessage = error.message || error.error_description || accountsResponse.statusText
-    throw new Error(`LinkedIn Ad Accounts API error: ${errorMessage}`)
-  }
-
-  const accountsData = await accountsResponse.json()
   
   if (!accountsData.elements || accountsData.elements.length === 0) {
     throw new Error('No LinkedIn ad accounts found. Ensure the access token has the required Marketing API permissions.')
@@ -82,24 +96,33 @@ export async function fetchLinkedInAdsCampaigns(config: LinkedInAdsConfig) {
 
   // Step 2: Fetch campaigns for the ad account
   const campaignsUrl = `${LINKEDIN_API_BASE}/rest/adCampaigns?q=search&search=(account:(values:List(urn:li:sponsoredAccount:${adAccountId})))&count=100`
-  const campaignsResponse = await fetch(campaignsUrl, {
-    method: 'GET',
-    headers: {
-      ...headers,
-      'X-RestLi-Method': 'finder',
-    },
+  
+  const campaignsData = await withRateLimit('linkedin_ads', async () => {
+    const campaignsResponse = await fetch(campaignsUrl, {
+      method: 'GET',
+      headers: {
+        ...headers,
+        'X-RestLi-Method': 'finder',
+      },
+    })
+
+    if (!campaignsResponse.ok) {
+      const error = await campaignsResponse.json().catch(() => ({}))
+      const errorMessage = error.message || error.error_description || campaignsResponse.statusText
+      throw new PlatformAPIError(
+        'linkedin_ads',
+        'fetchCampaigns',
+        new Error(errorMessage),
+        campaignsResponse.status,
+        error.code?.toString()
+      )
+    }
+
+    return await campaignsResponse.json()
   })
 
-  if (!campaignsResponse.ok) {
-    const error = await campaignsResponse.json().catch(() => ({}))
-    const errorMessage = error.message || error.error_description || campaignsResponse.statusText
-    throw new Error(`LinkedIn Campaigns API error: ${errorMessage}`)
-  }
-
-  const campaignsData = await campaignsResponse.json()
-
   if (!campaignsData.elements || campaignsData.elements.length === 0) {
-    // Return empty array if no campaigns found (not an error)
+    logger.info('No LinkedIn campaigns found')
     return []
   }
 
@@ -116,18 +139,23 @@ export async function fetchLinkedInAdsCampaigns(config: LinkedInAdsConfig) {
   })
 
   const analyticsUrl = `${LINKEDIN_API_BASE}/rest/adAnalytics?${analyticsParams.toString()}`
-  const analyticsResponse = await fetch(analyticsUrl, {
-    method: 'GET',
-    headers: {
-      ...headers,
-      'X-RestLi-Method': 'finder',
-    },
-  })
+  
+  const analyticsData = await withRateLimit('linkedin_ads', async () => {
+    const analyticsResponse = await fetch(analyticsUrl, {
+      method: 'GET',
+      headers: {
+        ...headers,
+        'X-RestLi-Method': 'finder',
+      },
+    })
 
-  let analyticsData: any = { elements: [] }
-  if (analyticsResponse.ok) {
-    analyticsData = await analyticsResponse.json()
-  }
+    if (analyticsResponse.ok) {
+      return await analyticsResponse.json()
+    }
+    
+    logger.warn('LinkedIn analytics fetch failed, continuing without analytics')
+    return { elements: [] }
+  })
 
   // Map analytics to campaigns
   const analyticsMap = new Map(
@@ -138,6 +166,11 @@ export async function fetchLinkedInAdsCampaigns(config: LinkedInAdsConfig) {
     ...campaign,
     analytics: analyticsMap.get(campaign.id) || null,
   }))
+
+  logAPISuccess('linkedin_ads', 'fetchCampaigns', {
+    campaignCount: campaignsWithMetrics.length,
+    withAnalytics: campaignsWithMetrics.filter((c: any) => c.analytics).length,
+  })
 
   return campaignsWithMetrics
 }
@@ -151,7 +184,7 @@ export function transformLinkedInAdsData(apiData: any[]) {
       campaign_id: campaign.id.toString(),
       campaign_name: campaign.name,
       platform: 'linkedin_ads',
-      status: campaign.status.toLowerCase(),
+      status: normalizeLinkedInStatus(campaign.status),
       budget_amount: campaign.dailyBudget?.amount
         ? parseFloat(campaign.dailyBudget.amount)
         : null,
@@ -171,5 +204,15 @@ export function transformLinkedInAdsData(apiData: any[]) {
   })
 
   return { campaigns, metrics }
+}
+
+function normalizeLinkedInStatus(status: string): string {
+  const statusMap: Record<string, string> = {
+    'ACTIVE': 'active',
+    'PAUSED': 'paused',
+    'ARCHIVED': 'archived',
+    'DRAFT': 'paused',
+  }
+  return statusMap[status] || status.toLowerCase()
 }
 

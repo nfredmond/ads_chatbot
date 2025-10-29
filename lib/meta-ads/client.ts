@@ -3,12 +3,17 @@
  * Documentation: https://developers.facebook.com/docs/marketing-api/insights
  */
 
-const DEFAULT_GRAPH_VERSION = 'v24.0'
+import { generateAppsecretProof } from './app-secret-proof'
+import logger, { PlatformAPIError, logAPISuccess } from '../logging/logger'
+import { withRateLimit } from '../rate-limiting/limiter'
+
+const DEFAULT_GRAPH_VERSION = 'v21.0'
 
 export interface MetaAdsConfig {
   accessToken: string
   accountId: string
   apiVersion?: string
+  appSecret?: string // For App Secret Proof
 }
 
 interface MetaPagingResponse<T> {
@@ -30,9 +35,19 @@ async function fetchAllPages<T>(initialUrl: string): Promise<T[]> {
       },
     })
 
+    // Check rate limit headers
+    const rateLimiter = (await import('../rate-limiting/limiter')).default()
+    rateLimiter.checkMetaRateLimit(Object.fromEntries(response.headers.entries()))
+
     if (!response.ok) {
       const error = await response.json().catch(() => ({}))
-      throw new Error(`Meta Ads API error: ${error.error?.message || response.statusText}`)
+      throw new PlatformAPIError(
+        'meta_ads',
+        'fetchAllPages',
+        new Error(error.error?.message || response.statusText),
+        response.status,
+        error.error?.code?.toString()
+      )
     }
 
     const body = (await response.json()) as MetaPagingResponse<T>
@@ -53,6 +68,8 @@ export async function fetchMetaAdsCampaigns(config: MetaAdsConfig) {
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   const until = new Date().toISOString().split('T')[0]
 
+  logger.info('Fetching Meta Ads campaigns', { accountId, dateRange: { since, until } })
+
   // Fetch campaign metadata (name, status, budget)
   const campaignsParams = new URLSearchParams({
     fields: 'id,name,status,daily_budget,objective',
@@ -60,14 +77,23 @@ export async function fetchMetaAdsCampaigns(config: MetaAdsConfig) {
     limit: '100',
   })
 
+  // Add App Secret Proof if available for enhanced security
+  if (config.appSecret) {
+    const appsecretProof = generateAppsecretProof(config.accessToken, config.appSecret)
+    campaignsParams.set('appsecret_proof', appsecretProof)
+  }
+
   const campaignsUrl = `https://graph.facebook.com/${apiVersion}/${accountId}/campaigns?${campaignsParams.toString()}`
-  const campaignMetadata = await fetchAllPages<{
-    id: string
-    name: string
-    status: string
-    daily_budget?: string
-    objective?: string
-  }>(campaignsUrl)
+  
+  const campaignMetadata = await withRateLimit('meta_ads', async () => {
+    return await fetchAllPages<{
+      id: string
+      name: string
+      status: string
+      daily_budget?: string
+      objective?: string
+    }>(campaignsUrl)
+  })
 
   // Fetch insights at campaign level as recommended by Meta
   const insightsParams = new URLSearchParams({
@@ -81,20 +107,34 @@ export async function fetchMetaAdsCampaigns(config: MetaAdsConfig) {
     limit: '100',
   })
 
+  // Add App Secret Proof for enhanced security
+  if (config.appSecret) {
+    const appsecretProof = generateAppsecretProof(config.accessToken, config.appSecret)
+    insightsParams.set('appsecret_proof', appsecretProof)
+  }
+
   const insightsUrl = `https://graph.facebook.com/${apiVersion}/${accountId}/insights?${insightsParams.toString()}`
-  const insightsData = await fetchAllPages<{
-    campaign_id: string
-    campaign_name: string
-    campaign_status: string
-    objective?: string
-    impressions?: string
-    clicks?: string
-    spend?: string
-    actions?: Array<{ action_type: string; value: string }>
-    action_values?: Array<{ action_type: string; value: string }>
-    date_start?: string
-    date_stop?: string
-  }>(insightsUrl)
+  
+  const insightsData = await withRateLimit('meta_ads', async () => {
+    return await fetchAllPages<{
+      campaign_id: string
+      campaign_name: string
+      campaign_status: string
+      objective?: string
+      impressions?: string
+      clicks?: string
+      spend?: string
+      actions?: Array<{ action_type: string; value: string }>
+      action_values?: Array<{ action_type: string; value: string }>
+      date_start?: string
+      date_stop?: string
+    }>(insightsUrl)
+  })
+
+  logAPISuccess('meta_ads', 'fetchCampaigns', {
+    campaignCount: campaignMetadata.length,
+    insightsCount: insightsData.length,
+  })
 
   return { campaignMetadata, insightsData, dateRange: { since, until } }
 }
@@ -139,7 +179,7 @@ export function transformMetaAdsData(apiData: {
         campaign_id: insight.campaign_id,
         campaign_name: insight.campaign_name,
         platform: 'meta_ads',
-        status: (insight.campaign_status || meta?.status || 'unknown').toLowerCase(),
+        status: normalizeMetaStatus(insight.campaign_status || meta?.status || 'UNKNOWN'),
         budget_amount: meta?.daily_budget ? parseFloat(meta.daily_budget) / 100 : null,
         objective: insight.objective || meta?.objective || null,
       })
@@ -148,10 +188,12 @@ export function transformMetaAdsData(apiData: {
     }
 
     const purchaseAction = insight.actions?.find(
-      (action) => action.action_type === 'offsite_conversion.fb_pixel_purchase'
+      (action) => action.action_type === 'offsite_conversion.fb_pixel_purchase' || 
+                 action.action_type === 'purchase'
     )
     const revenueAction = insight.action_values?.find(
-      (action) => action.action_type === 'offsite_conversion.fb_pixel_purchase'
+      (action) => action.action_type === 'offsite_conversion.fb_pixel_purchase' ||
+                 action.action_type === 'purchase'
     )
 
     metrics.push({
@@ -166,5 +208,15 @@ export function transformMetaAdsData(apiData: {
   })
 
   return { campaigns, metrics }
+}
+
+function normalizeMetaStatus(status: string): string {
+  const statusMap: Record<string, string> = {
+    'ACTIVE': 'active',
+    'PAUSED': 'paused',
+    'DELETED': 'archived',
+    'ARCHIVED': 'archived',
+  }
+  return statusMap[status] || status.toLowerCase()
 }
 
