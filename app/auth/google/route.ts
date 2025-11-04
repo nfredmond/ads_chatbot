@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import crypto from 'crypto'
 import logger, { logOAuthEvent } from '@/lib/logging/logger'
+import { buildEncryptedTokenUpdate } from '@/lib/security/ad-account-tokens'
 
 const GOOGLE_OAUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
@@ -154,12 +155,16 @@ export async function GET(request: NextRequest) {
       throw new Error('No refresh token received. Please revoke access and try again.')
     }
 
+    const tokenUpdate = buildEncryptedTokenUpdate({
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+    })
+
     // Update ad_accounts with refresh token
     const { error: updateError } = await supabase
       .from('ad_accounts')
       .update({
-        refresh_token: tokens.refresh_token,
-        access_token: tokens.access_token,
+        ...tokenUpdate,
         token_expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
         status: 'active',
         last_synced_at: null, // Reset sync time

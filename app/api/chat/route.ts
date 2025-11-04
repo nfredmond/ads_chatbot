@@ -37,20 +37,23 @@ export async function POST(request: NextRequest) {
       .eq('tenant_id', profile?.tenant_id)
       .eq('status', 'active')
 
-    // Fetch campaign data with metrics
+    // Fetch campaign data with metrics - JOIN with campaigns to get platform info
     const { data: campaigns } = await supabase
       .from('campaigns')
-      .select('id, campaign_name, platform, status, budget_amount')
+      .select('id, campaign_id, campaign_name, platform, status, budget_amount')
       .eq('tenant_id', profile?.tenant_id)
-      .limit(20)
+      .limit(50)
 
-    // Fetch recent metrics
+    // Fetch recent metrics with campaign platform info
     const { data: recentMetrics } = await supabase
       .from('campaign_metrics')
-      .select('date, impressions, clicks, conversions, spend, revenue')
+      .select(`
+        date, impressions, clicks, conversions, spend, revenue,
+        campaigns!inner(platform)
+      `)
       .eq('tenant_id', profile?.tenant_id)
       .order('date', { ascending: false })
-      .limit(30)
+      .limit(100)
 
     // Calculate summary stats
     const totalSpend = recentMetrics?.reduce((sum, m) => sum + (Number(m.spend) || 0), 0) || 0
@@ -59,6 +62,50 @@ export async function POST(request: NextRequest) {
     const totalImpressions = recentMetrics?.reduce((sum, m) => sum + (m.impressions || 0), 0) || 0
     const totalClicks = recentMetrics?.reduce((sum, m) => sum + (m.clicks || 0), 0) || 0
     const avgROAS = totalSpend > 0 ? totalRevenue / totalSpend : 0
+
+    // Build campaign platform map for metrics lookup
+    const campaignPlatformMap = new Map<string, string>()
+    if (campaigns) {
+      for (const campaign of campaigns) {
+        campaignPlatformMap.set(campaign.id, campaign.platform)
+      }
+    }
+
+    // Calculate platform-specific stats
+    const platformStats: Record<string, any> = {}
+    if (recentMetrics) {
+      for (const metric of recentMetrics) {
+        // Try to get platform from joined data or fallback to map lookup
+        const platform = (metric.campaigns as any)?.platform || campaignPlatformMap.get(metric.campaign_id) || 'unknown'
+        if (!platformStats[platform]) {
+          platformStats[platform] = {
+            spend: 0,
+            revenue: 0,
+            conversions: 0,
+            impressions: 0,
+            clicks: 0,
+            campaigns: new Set(),
+          }
+        }
+        platformStats[platform].spend += Number(metric.spend) || 0
+        platformStats[platform].revenue += Number(metric.revenue) || 0
+        platformStats[platform].conversions += metric.conversions || 0
+        platformStats[platform].impressions += metric.impressions || 0
+        platformStats[platform].clicks += metric.clicks || 0
+      }
+    }
+
+    // Convert platform stats to readable format
+    const platformBreakdown = Object.entries(platformStats).map(([platform, stats]: [string, any]) => ({
+      platform: platform.replace('_ads', '').toUpperCase(),
+      spend: stats.spend,
+      revenue: stats.revenue,
+      conversions: stats.conversions,
+      impressions: stats.impressions,
+      clicks: stats.clicks,
+      roas: stats.spend > 0 ? stats.revenue / stats.spend : 0,
+      ctr: stats.impressions > 0 ? (stats.clicks / stats.impressions) * 100 : 0,
+    }))
 
     const hasData = campaigns && campaigns.length > 0
 
@@ -75,7 +122,7 @@ export async function POST(request: NextRequest) {
 Connected Ad Platforms: ${adAccounts?.map((a) => a.platform.replace('_ads', '').toUpperCase()).join(', ') || 'None'}
 
 ${hasData ? `
-Campaign Summary:
+OVERALL CAMPAIGN SUMMARY:
 - Total Active Campaigns: ${campaigns.length}
 - Total Ad Spend (last 30 days): $${totalSpend.toFixed(2)}
 - Total Revenue: $${totalRevenue.toFixed(2)}
@@ -83,22 +130,64 @@ Campaign Summary:
 - Total Impressions: ${totalImpressions.toLocaleString()}
 - Total Clicks: ${totalClicks}
 - Average ROAS: ${avgROAS.toFixed(2)}x
-- CTR: ${totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : 0}%
+- Overall CTR: ${totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : 0}%
 
-Campaign Details:
-${JSON.stringify(campaigns.slice(0, 10), null, 2)}
+PLATFORM-SPECIFIC BREAKDOWN:
+${platformBreakdown.length > 0 ? JSON.stringify(platformBreakdown, null, 2) : 'No platform-specific data available'}
 
-Recent Metrics (last 7 days):
-${JSON.stringify(recentMetrics?.slice(0, 7), null, 2)}
+TOP CAMPAIGNS (by spend):
+${JSON.stringify(
+  campaigns
+    .sort((a, b) => (b.budget_amount || 0) - (a.budget_amount || 0))
+    .slice(0, 10)
+    .map((c: any) => ({
+      name: c.campaign_name,
+      platform: c.platform.replace('_ads', '').toUpperCase(),
+      status: c.status,
+      budget: c.budget_amount,
+    })),
+  null,
+  2
+)}
+
+RECENT METRICS (last 14 days):
+${JSON.stringify(
+  recentMetrics
+    ?.slice(0, 14)
+    .map((m: any) => {
+      const platform = (m.campaigns as any)?.platform || campaignPlatformMap.get(m.campaign_id) || 'unknown'
+      return {
+        date: m.date,
+        platform: platform.replace('_ads', '').toUpperCase(),
+        spend: Number(m.spend) || 0,
+        revenue: Number(m.revenue) || 0,
+        conversions: m.conversions || 0,
+        impressions: m.impressions || 0,
+        clicks: m.clicks || 0,
+      }
+    }),
+  null,
+  2
+)}
 ` : `
 ⚠️ NO CAMPAIGN DATA CONNECTED YET
 
 The user needs to:
-1. Connect their ad platform accounts in Settings
-2. Sync campaign data from their accounts
-3. Wait for data to populate the dashboard
+1. Connect their ad platform accounts in Settings (Google Ads, Meta Ads, LinkedIn Ads)
+2. Click "Sync Data" button after connecting accounts
+3. Wait for data to populate (usually takes 10-30 seconds)
 
-When the user asks about campaigns, politely inform them they need to connect their ad accounts first. Explain what they can do with the platform once connected.`}
+When the user asks about campaigns, politely inform them they need to:
+- Connect their ad accounts in Settings → Ad Platforms
+- Click "Sync Data" to fetch campaign information
+- Wait a moment for data to load
+
+Once connected, you'll be able to provide insights on:
+- Campaign performance across platforms
+- ROAS, CTR, and conversion metrics
+- Platform comparisons
+- Optimization recommendations
+- Budget allocation insights`}
 
 You should:
 - Provide actionable insights about campaign performance

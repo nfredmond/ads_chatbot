@@ -4,27 +4,16 @@
  */
 
 import logger from '../logging/logger'
-import { getCached, setCached, CACHE_TTL, generateCacheKey } from '../cache/redis-client'
+import {
+  getCached,
+  setCached,
+  CACHE_TTL,
+  generateCacheKey,
+} from '../cache/redis-client'
+import { createServiceRoleClient } from '../supabase/service-role'
 
-interface PlatformMetric {
-  id: string
-  name: string
-  platform: 'google_ads' | 'meta_ads' | 'linkedin_ads'
-  status: string
-  impressions?: number | string
-  clicks?: number | string
-  spend?: number | string
-  cost_micros?: number | string
-  costInLocalCurrency?: number | string
-  conversions?: number | string
-  actions?: Array<{ action_type: string; value: string }>
-  conversions_value?: number | string
-  action_values?: Array<{ action_type: string; value: string }>
-  conversionValueInLocalCurrency?: number | string
-}
-
-interface NormalizedMetric {
-  platform: 'google_ads' | 'meta_ads' | 'linkedin_ads'
+export interface NormalizedMetric {
+  platform: 'google_ads' | 'meta_ads' | 'linkedin_ads' | 'all'
   campaignId: string
   campaignName: string
   status: 'active' | 'paused' | 'archived' | 'unknown'
@@ -33,12 +22,12 @@ interface NormalizedMetric {
   spend: number
   conversions: number
   revenue: number
-  ctr: number // Click-through rate (%)
-  cpc: number // Cost per click ($)
-  cpm: number // Cost per mille/thousand impressions ($)
-  roas: number // Return on ad spend (ratio)
-  conversionRate: number // Conversion rate (%)
-  costPerConversion: number // Cost per conversion ($)
+  ctr: number
+  cpc: number
+  cpm: number
+  roas: number
+  conversionRate: number
+  costPerConversion: number
 }
 
 interface DateRange {
@@ -46,10 +35,15 @@ interface DateRange {
   end: string
 }
 
+interface AggregateTotals {
+  impressions: number
+  clicks: number
+  spend: number
+  conversions: number
+  revenue: number
+}
+
 export class CrossPlatformMetricsAggregator {
-  /**
-   * Fetch and normalize metrics from all platforms
-   */
   async fetchAllPlatformMetrics(
     userId: string,
     dateRange: DateRange
@@ -57,106 +51,145 @@ export class CrossPlatformMetricsAggregator {
     logger.info('Fetching cross-platform metrics', { userId, dateRange })
 
     try {
-      // Check cache first
-      const cacheKey = generateCacheKey('aggregated', 'metrics', userId, dateRange.start, dateRange.end)
+      const supabase = createServiceRoleClient()
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', userId)
+        .single()
+
+      if (profileError) {
+        logger.error('Failed to resolve tenant for user', {
+          userId,
+          error: profileError,
+        })
+        return []
+      }
+
+      if (!profile?.tenant_id) {
+        logger.warn('No tenant associated with user, skipping metrics fetch', {
+          userId,
+        })
+        return []
+      }
+
+      const tenantId = profile.tenant_id
+      const cacheKey = generateCacheKey(
+        'aggregated',
+        'metrics',
+        tenantId,
+        dateRange.start,
+        dateRange.end
+      )
+
       const cached = await getCached<NormalizedMetric[]>(cacheKey)
-      
       if (cached) {
         logger.info('Returning cached cross-platform metrics')
         return cached
       }
 
-      // Fetch from all platforms in parallel
-      const [googleMetrics, metaMetrics, linkedinMetrics] = await Promise.allSettled([
-        this.fetchGoogleMetrics(userId, dateRange),
-        this.fetchMetaMetrics(userId, dateRange),
-        this.fetchLinkedInMetrics(userId, dateRange),
-      ])
+      const normalizedMetrics = await this.loadTenantMetrics(
+        supabase,
+        tenantId,
+        dateRange
+      )
 
-      const allMetrics: PlatformMetric[] = []
-
-      // Collect successful results
-      if (googleMetrics.status === 'fulfilled') {
-        allMetrics.push(...googleMetrics.value.map(m => ({ ...m, platform: 'google_ads' as const })))
-      } else {
-        logger.error('Google Ads metrics fetch failed', { error: googleMetrics.reason })
-      }
-
-      if (metaMetrics.status === 'fulfilled') {
-        allMetrics.push(...metaMetrics.value.map(m => ({ ...m, platform: 'meta_ads' as const })))
-      } else {
-        logger.error('Meta Ads metrics fetch failed', { error: metaMetrics.reason })
-      }
-
-      if (linkedinMetrics.status === 'fulfilled') {
-        allMetrics.push(...linkedinMetrics.value.map(m => ({ ...m, platform: 'linkedin_ads' as const })))
-      } else {
-        logger.error('LinkedIn Ads metrics fetch failed', { error: linkedinMetrics.reason })
-      }
-
-      // Normalize and combine
-      const normalized = this.normalizeAndCombine(allMetrics)
-
-      // Cache the results
-      await setCached(cacheKey, normalized, CACHE_TTL.METRICS)
+      await setCached(cacheKey, normalizedMetrics, CACHE_TTL.METRICS)
 
       logger.info('Cross-platform metrics fetched successfully', {
-        totalCampaigns: normalized.length,
+        tenantId,
+        campaignCount: normalizedMetrics.length,
       })
 
-      return normalized
+      return normalizedMetrics
     } catch (error) {
       logger.error('Failed to fetch cross-platform metrics', { error })
-      throw error
+      return []
     }
   }
 
-  /**
-   * Fetch Google Ads metrics
-   */
-  private async fetchGoogleMetrics(userId: string, dateRange: DateRange): Promise<PlatformMetric[]> {
-    // This would integrate with the actual Google Ads client
-    // For now, it's a placeholder that would call the API
-    const { fetchGoogleAdsCampaigns } = await import('@/lib/google-ads/client')
-    // Implementation would go here
-    return []
-  }
+  private async loadTenantMetrics(
+    supabase: ReturnType<typeof createServiceRoleClient>,
+    tenantId: string,
+    dateRange: DateRange
+  ): Promise<NormalizedMetric[]> {
+    const { data: campaigns, error: campaignsError } = await supabase
+      .from('campaigns')
+      .select('id,campaign_id,campaign_name,platform,status')
+      .eq('tenant_id', tenantId)
 
-  /**
-   * Fetch Meta Ads metrics
-   */
-  private async fetchMetaMetrics(userId: string, dateRange: DateRange): Promise<PlatformMetric[]> {
-    // This would integrate with the actual Meta Ads client
-    const { fetchMetaAdsCampaigns } = await import('@/lib/meta-ads/client')
-    // Implementation would go here
-    return []
-  }
+    if (campaignsError) {
+      logger.error('Failed to fetch campaigns for tenant', {
+        tenantId,
+        error: campaignsError,
+      })
+      return []
+    }
 
-  /**
-   * Fetch LinkedIn Ads metrics
-   */
-  private async fetchLinkedInMetrics(userId: string, dateRange: DateRange): Promise<PlatformMetric[]> {
-    // This would integrate with the actual LinkedIn Ads client
-    const { fetchLinkedInAdsCampaigns } = await import('@/lib/linkedin-ads/client')
-    // Implementation would go here
-    return []
-  }
+    const { data: metrics, error: metricsError } = await supabase
+      .from('campaign_metrics')
+      .select('campaign_id,impressions,clicks,spend,conversions,revenue,date')
+      .eq('tenant_id', tenantId)
+      .gte('date', dateRange.start)
+      .lte('date', dateRange.end)
 
-  /**
-   * Normalize and combine metrics from all platforms
-   */
-  private normalizeAndCombine(rawMetrics: PlatformMetric[]): NormalizedMetric[] {
-    return rawMetrics.map(metric => {
-      const normalized: NormalizedMetric = {
-        platform: metric.platform,
-        campaignId: metric.id,
-        campaignName: metric.name,
-        status: this.normalizeStatus(metric.platform, metric.status),
-        impressions: parseInt(String(metric.impressions || 0)),
-        clicks: parseInt(String(metric.clicks || 0)),
-        spend: this.normalizeCost(metric.platform, metric),
-        conversions: this.normalizeConversions(metric.platform, metric),
-        revenue: this.normalizeRevenue(metric.platform, metric),
+    if (metricsError) {
+      logger.error('Failed to fetch campaign metrics', {
+        tenantId,
+        error: metricsError,
+      })
+      return []
+    }
+
+    const totalsByCampaign = new Map<string, AggregateTotals>()
+
+    for (const metric of metrics || []) {
+      if (!metric?.campaign_id) continue
+
+      if (!totalsByCampaign.has(metric.campaign_id)) {
+        totalsByCampaign.set(metric.campaign_id, {
+          impressions: 0,
+          clicks: 0,
+          spend: 0,
+          conversions: 0,
+          revenue: 0,
+        })
+      }
+
+      const totals = totalsByCampaign.get(metric.campaign_id)!
+      totals.impressions += Number(metric.impressions || 0)
+      totals.clicks += Number(metric.clicks || 0)
+      totals.spend += Number(metric.spend || 0)
+      totals.conversions += Number(metric.conversions || 0)
+      totals.revenue += Number(metric.revenue || 0)
+    }
+
+    const normalized: NormalizedMetric[] = []
+
+    for (const campaign of campaigns || []) {
+      if (!['google_ads', 'meta_ads', 'linkedin_ads'].includes(campaign.platform)) {
+        continue
+      }
+
+      const totals = totalsByCampaign.get(campaign.id) || {
+        impressions: 0,
+        clicks: 0,
+        spend: 0,
+        conversions: 0,
+        revenue: 0,
+      }
+
+      const normalizedMetric: NormalizedMetric = {
+        platform: campaign.platform,
+        campaignId: campaign.campaign_id,
+        campaignName: campaign.campaign_name,
+        status: this.normalizeStatus(campaign.platform, campaign.status),
+        impressions: totals.impressions,
+        clicks: totals.clicks,
+        spend: totals.spend,
+        conversions: totals.conversions,
+        revenue: totals.revenue,
         ctr: 0,
         cpc: 0,
         cpm: 0,
@@ -165,172 +198,55 @@ export class CrossPlatformMetricsAggregator {
         costPerConversion: 0,
       }
 
-      // Calculate derived metrics
-      normalized.ctr = this.calculateCTR(normalized)
-      normalized.cpc = this.calculateCPC(normalized)
-      normalized.cpm = this.calculateCPM(normalized)
-      normalized.roas = this.calculateROAS(normalized)
-      normalized.conversionRate = this.calculateConversionRate(normalized)
-      normalized.costPerConversion = this.calculateCostPerConversion(normalized)
+      this.applyDerivedMetrics(normalizedMetric)
+      normalized.push(normalizedMetric)
+    }
 
-      return normalized
-    })
+    return normalized
   }
 
-  /**
-   * Normalize status across platforms
-   */
   private normalizeStatus(
     platform: string,
     status: string
   ): 'active' | 'paused' | 'archived' | 'unknown' {
+    const normalized = String(status || '').toUpperCase()
+
     const statusMap: Record<string, Record<string, 'active' | 'paused' | 'archived'>> = {
       google_ads: {
-        'ENABLED': 'active',
-        'enabled': 'active',
-        'PAUSED': 'paused',
-        'paused': 'paused',
-        'REMOVED': 'archived',
-        'removed': 'archived',
+        ENABLED: 'active',
+        PAUSED: 'paused',
+        REMOVED: 'archived',
       },
       meta_ads: {
-        'ACTIVE': 'active',
-        'active': 'active',
-        'PAUSED': 'paused',
-        'paused': 'paused',
-        'DELETED': 'archived',
-        'deleted': 'archived',
-        'ARCHIVED': 'archived',
-        'archived': 'archived',
+        ACTIVE: 'active',
+        PAUSED: 'paused',
+        DELETED: 'archived',
+        ARCHIVED: 'archived',
       },
       linkedin_ads: {
-        'ACTIVE': 'active',
-        'active': 'active',
-        'PAUSED': 'paused',
-        'paused': 'paused',
-        'ARCHIVED': 'archived',
-        'archived': 'archived',
-        'DRAFT': 'paused',
-        'draft': 'paused',
+        ACTIVE: 'active',
+        PAUSED: 'paused',
+        ARCHIVED: 'archived',
+        DRAFT: 'paused',
       },
     }
 
-    return statusMap[platform]?.[status] || 'unknown'
+    return statusMap[platform]?.[normalized] || 'unknown'
   }
 
-  /**
-   * Normalize cost across platforms
-   */
-  private normalizeCost(platform: string, metric: PlatformMetric): number {
-    switch (platform) {
-      case 'google_ads':
-        // Google uses micros (divide by 1,000,000)
-        return Number(metric.cost_micros || 0) / 1_000_000
-      case 'meta_ads':
-        // Meta uses dollars
-        return parseFloat(String(metric.spend || 0))
-      case 'linkedin_ads':
-        // LinkedIn uses local currency
-        return parseFloat(String(metric.costInLocalCurrency || 0))
-      default:
-        return 0
-    }
+  private applyDerivedMetrics(metric: NormalizedMetric) {
+    metric.ctr = metric.impressions > 0 ? (metric.clicks / metric.impressions) * 100 : 0
+    metric.cpc = metric.clicks > 0 ? metric.spend / metric.clicks : 0
+    metric.cpm = metric.impressions > 0 ? (metric.spend / metric.impressions) * 1000 : 0
+    metric.roas = metric.spend > 0 ? metric.revenue / metric.spend : 0
+    metric.conversionRate = metric.clicks > 0 ? (metric.conversions / metric.clicks) * 100 : 0
+    metric.costPerConversion = metric.conversions > 0 ? metric.spend / metric.conversions : 0
   }
 
-  /**
-   * Normalize conversions across platforms
-   */
-  private normalizeConversions(platform: string, metric: PlatformMetric): number {
-    switch (platform) {
-      case 'google_ads':
-        return Number(metric.conversions || 0)
-      case 'meta_ads':
-        // Meta tracks conversions in actions array
-        const purchaseAction = metric.actions?.find(
-          a => a.action_type === 'offsite_conversion.fb_pixel_purchase' || a.action_type === 'purchase'
-        )
-        return parseFloat(purchaseAction?.value || '0')
-      case 'linkedin_ads':
-        return parseFloat(String(metric.conversions || 0))
-      default:
-        return 0
-    }
-  }
-
-  /**
-   * Normalize revenue across platforms
-   */
-  private normalizeRevenue(platform: string, metric: PlatformMetric): number {
-    switch (platform) {
-      case 'google_ads':
-        return Number(metric.conversions_value || 0)
-      case 'meta_ads':
-        const revenueAction = metric.action_values?.find(
-          a => a.action_type === 'offsite_conversion.fb_pixel_purchase' || a.action_type === 'purchase'
-        )
-        return parseFloat(revenueAction?.value || '0')
-      case 'linkedin_ads':
-        return parseFloat(String(metric.conversionValueInLocalCurrency || 0))
-      default:
-        return 0
-    }
-  }
-
-  /**
-   * Calculate Click-Through Rate (CTR)
-   */
-  private calculateCTR(metric: NormalizedMetric): number {
-    if (metric.impressions === 0) return 0
-    return (metric.clicks / metric.impressions) * 100
-  }
-
-  /**
-   * Calculate Cost Per Click (CPC)
-   */
-  private calculateCPC(metric: NormalizedMetric): number {
-    if (metric.clicks === 0) return 0
-    return metric.spend / metric.clicks
-  }
-
-  /**
-   * Calculate Cost Per Mille (CPM)
-   */
-  private calculateCPM(metric: NormalizedMetric): number {
-    if (metric.impressions === 0) return 0
-    return (metric.spend / metric.impressions) * 1000
-  }
-
-  /**
-   * Calculate Return On Ad Spend (ROAS)
-   */
-  private calculateROAS(metric: NormalizedMetric): number {
-    if (metric.spend === 0) return 0
-    return metric.revenue / metric.spend
-  }
-
-  /**
-   * Calculate Conversion Rate
-   */
-  private calculateConversionRate(metric: NormalizedMetric): number {
-    if (metric.clicks === 0) return 0
-    return (metric.conversions / metric.clicks) * 100
-  }
-
-  /**
-   * Calculate Cost Per Conversion
-   */
-  private calculateCostPerConversion(metric: NormalizedMetric): number {
-    if (metric.conversions === 0) return 0
-    return metric.spend / metric.conversions
-  }
-
-  /**
-   * Aggregate metrics by platform
-   */
   aggregateByPlatform(metrics: NormalizedMetric[]): Record<string, NormalizedMetric> {
-    const aggregated: Record<string, any> = {}
+    const aggregated: Record<string, NormalizedMetric> = {}
 
-    metrics.forEach(metric => {
+    metrics.forEach((metric) => {
       if (!aggregated[metric.platform]) {
         aggregated[metric.platform] = {
           platform: metric.platform,
@@ -351,32 +267,21 @@ export class CrossPlatformMetricsAggregator {
         }
       }
 
-      aggregated[metric.platform].impressions += metric.impressions
-      aggregated[metric.platform].clicks += metric.clicks
-      aggregated[metric.platform].spend += metric.spend
-      aggregated[metric.platform].conversions += metric.conversions
-      aggregated[metric.platform].revenue += metric.revenue
+      const totals = aggregated[metric.platform]
+      totals.impressions += metric.impressions
+      totals.clicks += metric.clicks
+      totals.spend += metric.spend
+      totals.conversions += metric.conversions
+      totals.revenue += metric.revenue
     })
 
-    // Recalculate derived metrics for aggregated data
-    Object.keys(aggregated).forEach(platform => {
-      const agg = aggregated[platform]
-      agg.ctr = this.calculateCTR(agg)
-      agg.cpc = this.calculateCPC(agg)
-      agg.cpm = this.calculateCPM(agg)
-      agg.roas = this.calculateROAS(agg)
-      agg.conversionRate = this.calculateConversionRate(agg)
-      agg.costPerConversion = this.calculateCostPerConversion(agg)
-    })
+    Object.values(aggregated).forEach((metric) => this.applyDerivedMetrics(metric))
 
     return aggregated
   }
 
-  /**
-   * Get total aggregated metrics across all platforms
-   */
   getTotalMetrics(metrics: NormalizedMetric[]): NormalizedMetric {
-    const total: any = {
+    const total: NormalizedMetric = {
       platform: 'all',
       campaignId: 'total',
       campaignName: 'Total (All Platforms)',
@@ -386,9 +291,15 @@ export class CrossPlatformMetricsAggregator {
       spend: 0,
       conversions: 0,
       revenue: 0,
+      ctr: 0,
+      cpc: 0,
+      cpm: 0,
+      roas: 0,
+      conversionRate: 0,
+      costPerConversion: 0,
     }
 
-    metrics.forEach(metric => {
+    metrics.forEach((metric) => {
       total.impressions += metric.impressions
       total.clicks += metric.clicks
       total.spend += metric.spend
@@ -396,24 +307,14 @@ export class CrossPlatformMetricsAggregator {
       total.revenue += metric.revenue
     })
 
-    // Calculate derived metrics
-    total.ctr = this.calculateCTR(total)
-    total.cpc = this.calculateCPC(total)
-    total.cpm = this.calculateCPM(total)
-    total.roas = this.calculateROAS(total)
-    total.conversionRate = this.calculateConversionRate(total)
-    total.costPerConversion = this.calculateCostPerConversion(total)
+    this.applyDerivedMetrics(total)
 
-    return total as NormalizedMetric
+    return total
   }
 }
 
-// Singleton instance
 let aggregatorInstance: CrossPlatformMetricsAggregator | null = null
 
-/**
- * Get aggregator singleton
- */
 export function getMetricsAggregator(): CrossPlatformMetricsAggregator {
   if (!aggregatorInstance) {
     aggregatorInstance = new CrossPlatformMetricsAggregator()

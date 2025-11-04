@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import crypto from 'crypto'
 import logger, { logOAuthEvent } from '@/lib/logging/logger'
+import { buildEncryptedTokenUpdate } from '@/lib/security/ad-account-tokens'
 
 const LINKEDIN_OAUTH_URL = 'https://www.linkedin.com/oauth/v2/authorization'
 const LINKEDIN_TOKEN_URL = 'https://www.linkedin.com/oauth/v2/accessToken'
@@ -159,7 +160,20 @@ export async function GET(request: NextRequest) {
     )
 
     if (!accountsResponse.ok) {
-      throw new Error('Failed to fetch LinkedIn ad accounts')
+      const errorData = await accountsResponse.json().catch(() => ({}))
+      const errorMessage = errorData.message || errorData.error_description || 'Failed to fetch LinkedIn ad accounts'
+      
+      logger.error('LinkedIn OAuth: Failed to fetch ad accounts', {
+        status: accountsResponse.status,
+        error: errorMessage,
+      })
+      
+      // Provide helpful error messages
+      if (accountsResponse.status === 401 || accountsResponse.status === 403) {
+        throw new Error('LinkedIn access token expired or invalid. Please try connecting again.')
+      }
+      
+      throw new Error(`Failed to fetch LinkedIn ad accounts: ${errorMessage}`)
     }
 
     const accountsData = await accountsResponse.json()
@@ -172,6 +186,17 @@ export async function GET(request: NextRequest) {
     const firstAccount = accountsData.elements[0]
     const accountId = firstAccount.id.toString()
 
+    const tokenUpdate = buildEncryptedTokenUpdate({
+      accessToken: tokens.access_token,
+    })
+
+    const metadata = {
+      ...(adAccount.metadata || {}),
+      client_id: adAccount.metadata.client_id,
+      client_secret: adAccount.metadata.client_secret,
+      account_urn: firstAccount.reference,
+    }
+
     // Update or insert ad_accounts
     const { error: upsertError } = await supabase.from('ad_accounts').upsert(
       {
@@ -179,14 +204,10 @@ export async function GET(request: NextRequest) {
         platform: 'linkedin_ads',
         account_id: accountId,
         account_name: firstAccount.name || 'LinkedIn Ads Account',
-        access_token: tokens.access_token,
+        ...tokenUpdate,
         token_expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
         status: 'active',
-        metadata: {
-          client_id: adAccount.metadata.client_id,
-          client_secret: adAccount.metadata.client_secret,
-          account_urn: firstAccount.reference,
-        },
+        metadata,
         updated_at: new Date().toISOString(),
       },
       {
@@ -198,8 +219,23 @@ export async function GET(request: NextRequest) {
 
     logOAuthEvent('linkedin_ads', 'success', user.id)
 
+    // Trigger automatic sync after successful connection
+    try {
+      // Don't wait for sync to complete - trigger async
+      fetch(`${request.nextUrl.origin}/api/sync-data`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }).catch((err) => {
+        logger.warn('Failed to trigger automatic sync after LinkedIn OAuth', { error: err })
+      })
+    } catch (syncError) {
+      logger.warn('Error triggering sync after LinkedIn OAuth', { error: syncError })
+    }
+
     const response = NextResponse.redirect(
-      new URL('/dashboard/settings?success=LinkedIn Ads connected successfully', request.url)
+      new URL('/dashboard/settings?success=LinkedIn Ads connected successfully. Syncing campaign data...', request.url)
     )
     response.cookies.delete('linkedin_oauth_state')
 

@@ -61,31 +61,83 @@ export async function fetchLinkedInAdsCampaigns(config: LinkedInAdsConfig) {
 
   logger.info('Fetching LinkedIn Ads campaigns')
 
+  // Validate required configuration
+  if (!config.accessToken) {
+    throw new Error('LinkedIn Ads access token is required')
+  }
+
   // Step 1: Fetch ad accounts using Rest.li finder method
   const accountsUrl = `${LINKEDIN_API_BASE}/rest/adAccounts?q=search&search=(status:(values:List(ACTIVE,DRAFT)))`
   
   const accountsData = await withRateLimit('linkedin_ads', async () => {
-    const accountsResponse = await fetch(accountsUrl, {
-      method: 'GET',
-      headers: {
-        ...headers,
-        'X-RestLi-Method': 'finder',
-      },
-    })
+    try {
+      const accountsResponse = await fetch(accountsUrl, {
+        method: 'GET',
+        headers: {
+          ...headers,
+          'X-RestLi-Method': 'finder',
+        },
+      })
 
-    if (!accountsResponse.ok) {
-      const error = await accountsResponse.json().catch(() => ({}))
-      const errorMessage = error.message || error.error_description || accountsResponse.statusText
+      if (!accountsResponse.ok) {
+        const errorText = await accountsResponse.text()
+        let error: any = {}
+        try {
+          error = JSON.parse(errorText)
+        } catch {
+          error = { message: errorText || accountsResponse.statusText }
+        }
+
+        // Handle specific LinkedIn API errors
+        const errorMessage = error.message || error.error_description || accountsResponse.statusText
+
+        // Token expiration or invalid token
+        if (accountsResponse.status === 401 || accountsResponse.status === 403) {
+          throw new PlatformAPIError(
+            'linkedin_ads',
+            'fetchAdAccounts',
+            new Error('Access token expired or invalid. Please reconnect your LinkedIn Ads account.'),
+            accountsResponse.status,
+            error.code?.toString()
+          )
+        }
+
+        // Rate limit errors
+        if (accountsResponse.status === 429) {
+          const retryAfter = accountsResponse.headers.get('Retry-After')
+          throw new PlatformAPIError(
+            'linkedin_ads',
+            'fetchAdAccounts',
+            new Error(`Rate limit exceeded. Retry after ${retryAfter || 'some time'}`),
+            accountsResponse.status,
+            error.code?.toString()
+          )
+        }
+
+        throw new PlatformAPIError(
+          'linkedin_ads',
+          'fetchAdAccounts',
+          new Error(errorMessage),
+          accountsResponse.status,
+          error.code?.toString()
+        )
+      }
+
+      return await accountsResponse.json()
+    } catch (error: any) {
+      // Re-throw PlatformAPIError as-is
+      if (error instanceof PlatformAPIError) {
+        throw error
+      }
+      // Wrap other errors
       throw new PlatformAPIError(
         'linkedin_ads',
         'fetchAdAccounts',
-        new Error(errorMessage),
-        accountsResponse.status,
-        error.code?.toString()
+        error,
+        undefined,
+        undefined
       )
     }
-
-    return await accountsResponse.json()
   })
   
   if (!accountsData.elements || accountsData.elements.length === 0) {
@@ -93,32 +145,86 @@ export async function fetchLinkedInAdsCampaigns(config: LinkedInAdsConfig) {
   }
 
   const adAccountId = accountsData.elements[0]?.id
+  if (!adAccountId) {
+    throw new Error('Invalid LinkedIn ad account ID in response')
+  }
 
   // Step 2: Fetch campaigns for the ad account
-  const campaignsUrl = `${LINKEDIN_API_BASE}/rest/adCampaigns?q=search&search=(account:(values:List(urn:li:sponsoredAccount:${adAccountId})))&count=100`
+  // Build URN properly - account ID should be numeric
+  const accountUrn = adAccountId.toString().startsWith('urn:li:sponsoredAccount:') 
+    ? adAccountId.toString() 
+    : `urn:li:sponsoredAccount:${adAccountId}`
+  
+  const campaignsUrl = `${LINKEDIN_API_BASE}/rest/adCampaigns?q=search&search=(account:(values:List(${accountUrn})))&count=100`
   
   const campaignsData = await withRateLimit('linkedin_ads', async () => {
-    const campaignsResponse = await fetch(campaignsUrl, {
-      method: 'GET',
-      headers: {
-        ...headers,
-        'X-RestLi-Method': 'finder',
-      },
-    })
+    try {
+      const campaignsResponse = await fetch(campaignsUrl, {
+        method: 'GET',
+        headers: {
+          ...headers,
+          'X-RestLi-Method': 'finder',
+        },
+      })
 
-    if (!campaignsResponse.ok) {
-      const error = await campaignsResponse.json().catch(() => ({}))
-      const errorMessage = error.message || error.error_description || campaignsResponse.statusText
+      if (!campaignsResponse.ok) {
+        const errorText = await campaignsResponse.text()
+        let error: any = {}
+        try {
+          error = JSON.parse(errorText)
+        } catch {
+          error = { message: errorText || campaignsResponse.statusText }
+        }
+
+        const errorMessage = error.message || error.error_description || campaignsResponse.statusText
+
+        // Token expiration or invalid token
+        if (campaignsResponse.status === 401 || campaignsResponse.status === 403) {
+          throw new PlatformAPIError(
+            'linkedin_ads',
+            'fetchCampaigns',
+            new Error('Access token expired or invalid. Please reconnect your LinkedIn Ads account.'),
+            campaignsResponse.status,
+            error.code?.toString()
+          )
+        }
+
+        // Rate limit errors
+        if (campaignsResponse.status === 429) {
+          const retryAfter = campaignsResponse.headers.get('Retry-After')
+          throw new PlatformAPIError(
+            'linkedin_ads',
+            'fetchCampaigns',
+            new Error(`Rate limit exceeded. Retry after ${retryAfter || 'some time'}`),
+            campaignsResponse.status,
+            error.code?.toString()
+          )
+        }
+
+        throw new PlatformAPIError(
+          'linkedin_ads',
+          'fetchCampaigns',
+          new Error(errorMessage),
+          campaignsResponse.status,
+          error.code?.toString()
+        )
+      }
+
+      return await campaignsResponse.json()
+    } catch (error: any) {
+      // Re-throw PlatformAPIError as-is
+      if (error instanceof PlatformAPIError) {
+        throw error
+      }
+      // Wrap other errors
       throw new PlatformAPIError(
         'linkedin_ads',
         'fetchCampaigns',
-        new Error(errorMessage),
-        campaignsResponse.status,
-        error.code?.toString()
+        error,
+        undefined,
+        undefined
       )
     }
-
-    return await campaignsResponse.json()
   })
 
   if (!campaignsData.elements || campaignsData.elements.length === 0) {
@@ -141,20 +247,31 @@ export async function fetchLinkedInAdsCampaigns(config: LinkedInAdsConfig) {
   const analyticsUrl = `${LINKEDIN_API_BASE}/rest/adAnalytics?${analyticsParams.toString()}`
   
   const analyticsData = await withRateLimit('linkedin_ads', async () => {
-    const analyticsResponse = await fetch(analyticsUrl, {
-      method: 'GET',
-      headers: {
-        ...headers,
-        'X-RestLi-Method': 'finder',
-      },
-    })
+    try {
+      const analyticsResponse = await fetch(analyticsUrl, {
+        method: 'GET',
+        headers: {
+          ...headers,
+          'X-RestLi-Method': 'finder',
+        },
+      })
 
-    if (analyticsResponse.ok) {
-      return await analyticsResponse.json()
+      if (analyticsResponse.ok) {
+        return await analyticsResponse.json()
+      }
+      
+      // Log warning but don't fail the entire request if analytics fails
+      const errorText = await analyticsResponse.text()
+      logger.warn('LinkedIn analytics fetch failed, continuing without analytics', {
+        status: analyticsResponse.status,
+        error: errorText,
+      })
+      return { elements: [] }
+    } catch (error: any) {
+      // Don't fail the entire request if analytics fails
+      logger.warn('LinkedIn analytics fetch error, continuing without analytics', { error })
+      return { elements: [] }
     }
-    
-    logger.warn('LinkedIn analytics fetch failed, continuing without analytics')
-    return { elements: [] }
   })
 
   // Map analytics to campaigns

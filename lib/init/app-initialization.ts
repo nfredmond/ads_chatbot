@@ -9,6 +9,7 @@ import { initializeTokenMonitoring } from '../cron/token-monitor'
 import { testEncryption } from '../security/encryption'
 import { getEmailService } from '../email/email-service'
 import { getRateLimiter } from '../rate-limiting/limiter'
+import { migratePlaintextTokens } from '../security/ad-account-tokens'
 
 /**
  * Initialize all application services
@@ -25,6 +26,9 @@ export async function initializeApplication() {
     } else {
       logger.error('✗ Encryption test failed - check ENCRYPTION_KEY environment variable')
     }
+
+    logger.info('Checking for plaintext ad account tokens...')
+    await migratePlaintextTokens()
 
     // 2. Initialize Redis client
     logger.info('Initializing Redis cache...')

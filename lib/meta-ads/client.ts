@@ -28,34 +28,82 @@ async function fetchAllPages<T>(initialUrl: string): Promise<T[]> {
   let nextUrl: string | undefined = initialUrl
 
   while (nextUrl) {
-    const response = await fetch(nextUrl, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
+    try {
+      const response = await fetch(nextUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
 
-    // Check rate limit headers
-    const rateLimiter = (await import('../rate-limiting/limiter')).default()
-    rateLimiter.checkMetaRateLimit(Object.fromEntries(response.headers.entries()))
+      // Check rate limit headers
+      const rateLimiter = (await import('../rate-limiting/limiter')).default()
+      rateLimiter.checkMetaRateLimit(Object.fromEntries(response.headers.entries()))
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        const errorText = await response.text()
+        let error: any = {}
+        try {
+          error = JSON.parse(errorText)
+        } catch {
+          error = { error: { message: errorText || response.statusText } }
+        }
+
+        // Handle specific Meta API errors
+        const errorCode = error.error?.code
+        const errorMessage = error.error?.message || response.statusText
+
+        // Token expiration or invalid token
+        if (errorCode === 190 || response.status === 401) {
+          throw new PlatformAPIError(
+            'meta_ads',
+            'fetchAllPages',
+            new Error('Access token expired or invalid. Please reconnect your Meta Ads account.'),
+            response.status,
+            errorCode?.toString()
+          )
+        }
+
+        // Rate limit errors
+        if ([4, 17, 32, 613].includes(errorCode)) {
+          throw new PlatformAPIError(
+            'meta_ads',
+            'fetchAllPages',
+            new Error(`Rate limit exceeded: ${errorMessage}`),
+            response.status,
+            errorCode?.toString()
+          )
+        }
+
+        throw new PlatformAPIError(
+          'meta_ads',
+          'fetchAllPages',
+          new Error(errorMessage),
+          response.status,
+          errorCode?.toString()
+        )
+      }
+
+      const body = (await response.json()) as MetaPagingResponse<T>
+      if (Array.isArray(body.data)) {
+        results.push(...body.data)
+      }
+
+      nextUrl = body.paging?.next
+    } catch (error: any) {
+      // Re-throw PlatformAPIError as-is
+      if (error instanceof PlatformAPIError) {
+        throw error
+      }
+      // Wrap other errors
       throw new PlatformAPIError(
         'meta_ads',
         'fetchAllPages',
-        new Error(error.error?.message || response.statusText),
-        response.status,
-        error.error?.code?.toString()
+        error,
+        undefined,
+        undefined
       )
     }
-
-    const body = (await response.json()) as MetaPagingResponse<T>
-    if (Array.isArray(body.data)) {
-      results.push(...body.data)
-    }
-
-    nextUrl = body.paging?.next
   }
 
   return results
@@ -63,12 +111,27 @@ async function fetchAllPages<T>(initialUrl: string): Promise<T[]> {
 
 export async function fetchMetaAdsCampaigns(config: MetaAdsConfig) {
   const apiVersion = config.apiVersion ?? DEFAULT_GRAPH_VERSION
-  const accountId = config.accountId.startsWith('act_') ? config.accountId : `act_${config.accountId}`
+  
+  // Ensure account ID has act_ prefix
+  let accountId = config.accountId
+  if (!accountId.startsWith('act_')) {
+    // Remove any existing act_ prefix and add it
+    accountId = accountId.replace(/^act_/, '')
+    accountId = `act_${accountId}`
+  }
 
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   const until = new Date().toISOString().split('T')[0]
 
   logger.info('Fetching Meta Ads campaigns', { accountId, dateRange: { since, until } })
+
+  // Validate required configuration
+  if (!config.accessToken) {
+    throw new Error('Meta Ads access token is required')
+  }
+  if (!accountId) {
+    throw new Error('Meta Ads account ID is required')
+  }
 
   // Fetch campaign metadata (name, status, budget)
   const campaignsParams = new URLSearchParams({

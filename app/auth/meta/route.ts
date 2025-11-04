@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import crypto from 'crypto'
 import logger, { logOAuthEvent } from '@/lib/logging/logger'
+import { buildEncryptedTokenUpdate } from '@/lib/security/ad-account-tokens'
 
 const META_OAUTH_URL = 'https://www.facebook.com/v21.0/dialog/oauth'
 const META_TOKEN_URL = 'https://graph.facebook.com/v21.0/oauth/access_token'
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
             client_id: adAccount.metadata.app_id,
             redirect_uri: `${request.nextUrl.origin}/auth/meta`,
             response_type: 'code',
-            scope: 'ads_management,ads_read,business_management',
+            scope: 'ads_management,ads_read,business_management,pages_read_engagement,pages_show_list',
             state: stateToken,
           }).toString(),
         request.url
@@ -161,6 +162,31 @@ export async function GET(request: NextRequest) {
 
     const longToken = await longTokenResponse.json()
 
+    // Fetch pages associated with the authenticated user to map webhook events
+    let pages: Array<{ id: string; name?: string }> = []
+    try {
+      const pagesResponse = await fetch(
+        `https://graph.facebook.com/v21.0/me/accounts?` +
+          new URLSearchParams({
+            access_token: longToken.access_token,
+            fields: 'id,name',
+          })
+      )
+
+      if (pagesResponse.ok) {
+        const pagesData = await pagesResponse.json()
+        if (Array.isArray(pagesData?.data)) {
+          pages = pagesData.data
+        }
+      } else {
+        logger.warn('Meta OAuth: failed to fetch connected pages', {
+          status: pagesResponse.status,
+        })
+      }
+    } catch (error) {
+      logger.warn('Meta OAuth: error fetching connected pages', { error })
+    }
+
     // Step 3: Fetch ad accounts to get the actual account ID
     const accountsResponse = await fetch(
       `${META_ACCOUNTS_URL}?` +
@@ -171,7 +197,15 @@ export async function GET(request: NextRequest) {
     )
 
     if (!accountsResponse.ok) {
-      throw new Error('Failed to fetch ad accounts')
+      const errorData = await accountsResponse.json().catch(() => ({}))
+      const errorMessage = errorData.error?.message || 'Failed to fetch ad accounts'
+      
+      logger.error('Meta OAuth: Failed to fetch ad accounts', {
+        status: accountsResponse.status,
+        error: errorMessage,
+      })
+      
+      throw new Error(`Failed to fetch Meta ad accounts: ${errorMessage}`)
     }
 
     const accountsData = await accountsResponse.json()
@@ -183,6 +217,19 @@ export async function GET(request: NextRequest) {
     // Use the first active account
     const firstAccount = accountsData.data[0]
 
+    const tokenUpdate = buildEncryptedTokenUpdate({
+      accessToken: longToken.access_token,
+    })
+
+    const metadata = {
+      ...(adAccount.metadata || {}),
+      app_id: adAccount.metadata.app_id,
+      app_secret: adAccount.metadata.app_secret,
+      account_status: firstAccount.account_status,
+      pages,
+      page_ids: pages.map((page) => page.id),
+    }
+
     // Update or insert ad_accounts
     const { error: upsertError } = await supabase.from('ad_accounts').upsert(
       {
@@ -190,14 +237,12 @@ export async function GET(request: NextRequest) {
         platform: 'meta_ads',
         account_id: firstAccount.id,
         account_name: firstAccount.name || 'Meta Ads Account',
-        access_token: longToken.access_token,
-        token_expires_at: new Date(Date.now() + (longToken.expires_in || 5184000) * 1000).toISOString(),
+        ...tokenUpdate,
+        token_expires_at: new Date(
+          Date.now() + (longToken.expires_in || 5184000) * 1000
+        ).toISOString(),
         status: 'active',
-        metadata: {
-          app_id: adAccount.metadata.app_id,
-          app_secret: adAccount.metadata.app_secret,
-          account_status: firstAccount.account_status,
-        },
+        metadata,
         updated_at: new Date().toISOString(),
       },
       {
@@ -209,8 +254,23 @@ export async function GET(request: NextRequest) {
 
     logOAuthEvent('meta_ads', 'success', user.id)
 
+    // Trigger automatic sync after successful connection
+    try {
+      // Don't wait for sync to complete - trigger async
+      fetch(`${request.nextUrl.origin}/api/sync-data`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }).catch((err) => {
+        logger.warn('Failed to trigger automatic sync after Meta OAuth', { error: err })
+      })
+    } catch (syncError) {
+      logger.warn('Error triggering sync after Meta OAuth', { error: syncError })
+    }
+
     const response = NextResponse.redirect(
-      new URL('/dashboard/settings?success=Meta Ads connected successfully', request.url)
+      new URL('/dashboard/settings?success=Meta Ads connected successfully. Syncing campaign data...', request.url)
     )
     response.cookies.delete('meta_oauth_state')
 

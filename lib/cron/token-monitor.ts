@@ -4,17 +4,9 @@
  */
 
 import cron from 'node-cron'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/service-role'
 import { getEmailService } from '../email/email-service'
 import logger from '../logging/logger'
-
-interface ExpiringToken {
-  user_id: string
-  platform: string
-  expires_at: string
-  user_email?: string
-  full_name?: string
-}
 
 /**
  * Check for expiring tokens and notify users
@@ -23,7 +15,7 @@ async function checkExpiringTokens() {
   logger.info('Starting token expiration check')
 
   try {
-    const supabase = await createClient()
+    const supabase = createServiceRoleClient()
     const emailService = getEmailService()
 
     // Find tokens expiring in the next 7 days
@@ -107,7 +99,7 @@ async function deactivateExpiredTokens() {
   logger.info('Starting expired token deactivation')
 
   try {
-    const supabase = await createClient()
+    const supabase = createServiceRoleClient()
 
     const { data: expiredTokens, error: fetchError } = await supabase
       .from('ad_accounts')

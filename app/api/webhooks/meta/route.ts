@@ -4,9 +4,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import logger from '@/lib/logging/logger'
 import crypto from 'crypto'
+import { createServiceRoleClient } from '@/lib/supabase/service-role'
 
 const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || 'your-unique-verify-token'
 
@@ -62,9 +62,11 @@ export async function POST(request: NextRequest) {
       entryCount: data.entry?.length || 0,
     })
 
+    const supabase = createServiceRoleClient()
+
     // Process the webhook data
     if (data.object === 'page') {
-      await handlePageWebhook(data)
+      await handlePageWebhook(supabase, data)
     } else if (data.object === 'instagram') {
       await handleInstagramWebhook(data)
     } else if (data.object === 'whatsapp_business_account') {
@@ -113,29 +115,59 @@ function verifySignature(payload: string, signature: string | null): boolean {
 /**
  * Handle Facebook Page webhooks (Lead Ads, Comments, etc.)
  */
-async function handlePageWebhook(data: any) {
-  const supabase = await createClient()
+async function handlePageWebhook(supabase: any, data: any) {
+  const { data: adAccounts, error } = await supabase
+    .from('ad_accounts')
+    .select('id, tenant_id, account_id, metadata')
+    .eq('platform', 'meta_ads')
+    .eq('status', 'active')
+
+  if (error) {
+    logger.error('Failed to load Meta ad accounts for webhook handling', { error })
+    return
+  }
+
+  const pageContext = new Map<
+    string,
+    { tenantId: string; adAccountId: string; accountId: string }
+  >()
+
+  for (const account of adAccounts || []) {
+    const pageIds: string[] = account?.metadata?.page_ids || []
+    for (const pageId of pageIds) {
+      pageContext.set(pageId, {
+        tenantId: account.tenant_id,
+        adAccountId: account.id,
+        accountId: account.account_id,
+      })
+    }
+  }
 
   for (const entry of data.entry || []) {
+    const pageId = entry.id
+    const context = pageContext.get(pageId)
+
+    if (!context) {
+      logger.warn('No tenant mapping found for Meta page webhook', { pageId })
+      continue
+    }
+
     for (const change of entry.changes || []) {
       logger.info('Processing page webhook change', {
         field: change.field,
         value: change.value,
       })
 
-      // Handle Lead Ads
       if (change.field === 'leadgen') {
-        await handleLeadGen(supabase, change.value)
+        await handleLeadGen(supabase, change.value, context)
       }
 
-      // Handle Comments
       if (change.field === 'feed' && change.value.item === 'comment') {
-        await handleComment(supabase, change.value)
+        await handleComment(supabase, change.value, context)
       }
 
-      // Handle Post Engagement
       if (change.field === 'feed' && change.value.item === 'status') {
-        await handlePost(supabase, change.value)
+        await handlePost(supabase, change.value, context)
       }
     }
   }
@@ -160,7 +192,7 @@ async function handleWhatsAppWebhook(data: any) {
 /**
  * Handle Lead Gen (Lead Ads) events
  */
-async function handleLeadGen(supabase: any, value: any) {
+async function handleLeadGen(supabase: any, value: any, context: any) {
   try {
     const leadgenId = value.leadgen_id
     const pageId = value.page_id
@@ -168,19 +200,24 @@ async function handleLeadGen(supabase: any, value: any) {
 
     logger.info('New lead received', { leadgenId, pageId, formId })
 
-    // Fetch the lead data from Meta API
-    // This would require making an API call to get the full lead details
-    // For now, we'll just log it
-
-    // Store lead information
-    const { error } = await supabase.from('leads').insert({
-      platform: 'meta_ads',
-      leadgen_id: leadgenId,
-      page_id: pageId,
-      form_id: formId,
-      created_at: new Date().toISOString(),
-      raw_data: value,
-    })
+    const { error } = await supabase.from('leads').upsert(
+      {
+        tenant_id: context.tenantId,
+        platform: 'meta_ads',
+        leadgen_id: leadgenId,
+        page_id: pageId,
+        form_id: formId,
+        ad_id: value.ad_id,
+        campaign_id: value.campaign_id,
+        created_at: new Date().toISOString(),
+        raw_data: value,
+        status: 'new',
+        updated_at: new Date().toISOString(),
+      },
+      {
+        onConflict: 'tenant_id,leadgen_id',
+      }
+    )
 
     if (error) {
       logger.error('Failed to store lead', { error, leadgenId })
@@ -195,24 +232,31 @@ async function handleLeadGen(supabase: any, value: any) {
 /**
  * Handle Comment events
  */
-async function handleComment(supabase: any, value: any) {
+async function handleComment(supabase: any, value: any, context: any) {
   try {
     logger.info('New comment received', {
       commentId: value.comment_id,
       postId: value.post_id,
     })
 
-    // Store comment for analysis or response
-    const { error } = await supabase.from('social_engagements').insert({
-      platform: 'meta_ads',
-      engagement_type: 'comment',
-      post_id: value.post_id,
-      comment_id: value.comment_id,
-      created_time: value.created_time,
-      message: value.message,
-      from_user: value.from,
-      raw_data: value,
-    })
+    const { error } = await supabase.from('social_engagements').upsert(
+      {
+        tenant_id: context.tenantId,
+        platform: 'meta_ads',
+        engagement_type: 'comment',
+        post_id: value.post_id,
+        comment_id: value.comment_id,
+        created_time: value.created_time,
+        message: value.message,
+        from_user: value.from,
+        raw_data: value,
+        status: 'unread',
+        updated_at: new Date().toISOString(),
+      },
+      {
+        onConflict: 'platform,comment_id,tenant_id',
+      }
+    )
 
     if (error) {
       logger.error('Failed to store comment', { error })
@@ -225,15 +269,15 @@ async function handleComment(supabase: any, value: any) {
 /**
  * Handle Post events
  */
-async function handlePost(supabase: any, value: any) {
+async function handlePost(supabase: any, value: any, context: any) {
   try {
     logger.info('Post event received', {
       postId: value.post_id,
       verb: value.verb,
+      tenantId: context.tenantId,
     })
 
-    // Update post engagement metrics
-    // Implementation here
+    // Update post engagement metrics - implementation placeholder
   } catch (error) {
     logger.error('Post handling error', { error })
   }
