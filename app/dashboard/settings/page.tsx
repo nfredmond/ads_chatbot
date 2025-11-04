@@ -598,6 +598,59 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="ad-platforms" className="space-y-4">
+          {/* Instructions Card */}
+          <Card className="dark:bg-gray-800 border-blue-200 dark:border-blue-800">
+            <CardHeader>
+              <CardTitle className="dark:text-white flex items-center">
+                <Key className="w-5 h-5 mr-2 text-blue-600" />
+                How to Connect Your Ad Platforms
+              </CardTitle>
+              <CardDescription>
+                Follow these steps carefully for each platform
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ol className="list-decimal list-inside space-y-3 text-sm">
+                <li className="font-semibold text-gray-900 dark:text-gray-100">
+                  <strong>Enter Credentials</strong>
+                  <p className="text-gray-600 dark:text-gray-400 font-normal ml-5 mt-1">
+                    For Meta: Enter your App ID and App Secret from the Meta Developer Portal.<br/>
+                    For LinkedIn: Enter your Client ID and Client Secret from LinkedIn Developer Portal.
+                  </p>
+                </li>
+                <li className="font-semibold text-gray-900 dark:text-gray-100">
+                  <strong>Click Connect Button</strong>
+                  <p className="text-gray-600 dark:text-gray-400 font-normal ml-5 mt-1">
+                    The Connect button will save your credentials and redirect you to the platform's OAuth login page.
+                  </p>
+                </li>
+                <li className="font-semibold text-gray-900 dark:text-gray-100">
+                  <strong>Authorize Access</strong>
+                  <p className="text-gray-600 dark:text-gray-400 font-normal ml-5 mt-1">
+                    Log in to your ad account and approve the requested permissions.
+                  </p>
+                </li>
+                <li className="font-semibold text-gray-900 dark:text-gray-100">
+                  <strong>Wait for Sync</strong>
+                  <p className="text-gray-600 dark:text-gray-400 font-normal ml-5 mt-1">
+                    You'll be redirected back and the system will automatically sync your campaign data (takes 10-30 seconds).
+                  </p>
+                </li>
+                <li className="font-semibold text-gray-900 dark:text-gray-100">
+                  <strong>Check Dashboard</strong>
+                  <p className="text-gray-600 dark:text-gray-400 font-normal ml-5 mt-1">
+                    Navigate to the Dashboard to see your campaigns, metrics, and AI insights.
+                  </p>
+                </li>
+              </ol>
+              <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded">
+                <p className="text-xs text-yellow-800 dark:text-yellow-200">
+                  <strong>⚠️ Common Issues:</strong> Make sure you have active ad campaigns in your account. Empty accounts won't have data to sync. Also ensure your app has the correct permissions approved in the platform's developer portal.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="dark:bg-gray-800">
             <CardHeader>
               <CardTitle className="dark:text-white">Google Ads</CardTitle>

@@ -51,14 +51,14 @@ export async function GET(request: NextRequest) {
     // Get Meta credentials
     const { data: adAccount } = await supabase
       .from('ad_accounts')
-      .select('metadata')
+      .select('id, metadata')
       .eq('tenant_id', profile.tenant_id)
       .eq('platform', 'meta_ads')
       .maybeSingle()
 
     if (!adAccount?.metadata?.app_id || !adAccount?.metadata?.app_secret) {
       return NextResponse.redirect(
-        new URL('/dashboard/settings?error=Meta Ads credentials not configured', request.url)
+        new URL('/dashboard/settings?error=Meta Ads credentials not configured. Please add your App ID and Secret in Settings first.', request.url)
       )
     }
 

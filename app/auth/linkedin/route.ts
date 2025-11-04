@@ -50,14 +50,14 @@ export async function GET(request: NextRequest) {
     // Get LinkedIn credentials
     const { data: adAccount } = await supabase
       .from('ad_accounts')
-      .select('metadata')
+      .select('id, metadata')
       .eq('tenant_id', profile.tenant_id)
       .eq('platform', 'linkedin_ads')
       .maybeSingle()
 
     if (!adAccount?.metadata?.client_id || !adAccount?.metadata?.client_secret) {
       return NextResponse.redirect(
-        new URL('/dashboard/settings?error=LinkedIn Ads credentials not configured', request.url)
+        new URL('/dashboard/settings?error=LinkedIn Ads credentials not configured. Please add your Client ID and Secret in Settings first.', request.url)
       )
     }
 
