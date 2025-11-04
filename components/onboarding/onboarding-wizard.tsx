@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { ChevronRight, ChevronLeft, Check, ExternalLink } from 'lucide-react'
 
 interface OnboardingWizardProps {
@@ -36,13 +35,11 @@ export function OnboardingWizard({ userId, userEmail }: OnboardingWizardProps) {
   // Step 3: Meta Ads
   const [metaAppId, setMetaAppId] = useState('')
   const [metaAppSecret, setMetaAppSecret] = useState('')
-  const [metaAccessToken, setMetaAccessToken] = useState('')
   const [skipMeta, setSkipMeta] = useState(false)
 
   // Step 4: LinkedIn Ads
   const [linkedinClientId, setLinkedinClientId] = useState('')
   const [linkedinClientSecret, setLinkedinClientSecret] = useState('')
-  const [linkedinAccessToken, setLinkedinAccessToken] = useState('')
   const [skipLinkedIn, setSkipLinkedIn] = useState(false)
 
   const totalSteps = 4
@@ -126,35 +123,53 @@ export function OnboardingWizard({ userId, userEmail }: OnboardingWizardProps) {
       }
 
       // Save Meta Ads if not skipped
-      if (!skipMeta && metaAppId) {
-        await supabase.from('ad_accounts').insert({
-          tenant_id: tenantId,
-          platform: 'meta_ads',
-          account_id: metaAppId,
-          account_name: 'Meta Ads Account',
-          access_token: metaAccessToken,
-          status: 'active',
-          metadata: {
-            app_id: metaAppId,
-            app_secret: metaAppSecret,
+      if (!skipMeta && metaAppId && metaAppSecret) {
+        const { error: metaError } = await supabase.from('ad_accounts').upsert(
+          {
+            tenant_id: tenantId,
+            platform: 'meta_ads',
+            account_id: metaAppId,
+            account_name: 'Meta Ads Account',
+            status: 'pending',
+            metadata: {
+              app_id: metaAppId,
+              app_secret: metaAppSecret,
+            },
           },
-        })
+          {
+            onConflict: 'tenant_id,platform,account_id',
+          }
+        )
+
+        if (metaError) {
+          console.error('Meta Ads save error:', metaError)
+          throw new Error('Failed to save Meta Ads credentials. Please double-check your App ID and Secret.')
+        }
       }
 
       // Save LinkedIn Ads if not skipped
-      if (!skipLinkedIn && linkedinClientId) {
-        await supabase.from('ad_accounts').insert({
-          tenant_id: tenantId,
-          platform: 'linkedin_ads',
-          account_id: linkedinClientId,
-          account_name: 'LinkedIn Ads Account',
-          access_token: linkedinAccessToken,
-          status: 'active',
-          metadata: {
-            client_id: linkedinClientId,
-            client_secret: linkedinClientSecret,
+      if (!skipLinkedIn && linkedinClientId && linkedinClientSecret) {
+        const { error: linkedinError } = await supabase.from('ad_accounts').upsert(
+          {
+            tenant_id: tenantId,
+            platform: 'linkedin_ads',
+            account_id: linkedinClientId,
+            account_name: 'LinkedIn Ads Account',
+            status: 'pending',
+            metadata: {
+              client_id: linkedinClientId,
+              client_secret: linkedinClientSecret,
+            },
           },
-        })
+          {
+            onConflict: 'tenant_id,platform,account_id',
+          }
+        )
+
+        if (linkedinError) {
+          console.error('LinkedIn Ads save error:', linkedinError)
+          throw new Error('Failed to save LinkedIn Ads credentials. Please double-check your Client ID and Secret.')
+        }
       }
 
       // Wait a moment for database to fully commit
@@ -373,16 +388,9 @@ export function OnboardingWizard({ userId, userEmail }: OnboardingWizardProps) {
                     onChange={(e) => setMetaAppSecret(e.target.value)}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="meta-access-token">Access Token</Label>
-                  <Textarea
-                    id="meta-access-token"
-                    placeholder="Long-lived Access Token"
-                    value={metaAccessToken}
-                    onChange={(e) => setMetaAccessToken(e.target.value)}
-                    className="font-mono text-sm"
-                  />
-                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  After completing onboarding, you'll be redirected to finish the Meta OAuth connection so we can fetch your ad accounts securely.
+                </p>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -454,16 +462,9 @@ export function OnboardingWizard({ userId, userEmail }: OnboardingWizardProps) {
                     onChange={(e) => setLinkedinClientSecret(e.target.value)}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="linkedin-access-token">Access Token</Label>
-                  <Textarea
-                    id="linkedin-access-token"
-                    placeholder="OAuth 2.0 Access Token"
-                    value={linkedinAccessToken}
-                    onChange={(e) => setLinkedinAccessToken(e.target.value)}
-                    className="font-mono text-sm"
-                  />
-                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Once onboarding is complete we'll walk you through the LinkedIn OAuth flow to securely pull campaigns with live tokens.
+                </p>
               </div>
 
               <div className="flex items-center space-x-2">

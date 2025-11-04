@@ -142,10 +142,16 @@ export default function SettingsPage() {
         if (metaAccount?.metadata?.app_id) {
           setMetaAppId(metaAccount.metadata.app_id)
         }
+        if (metaAccount?.metadata?.app_secret) {
+          setMetaAppSecret(metaAccount.metadata.app_secret)
+        }
 
         const linkedinAccount = data.find((acc: any) => acc.platform === 'linkedin_ads')
         if (linkedinAccount?.metadata?.client_id) {
           setLinkedinClientId(linkedinAccount.metadata.client_id)
+        }
+        if (linkedinAccount?.metadata?.client_secret) {
+          setLinkedinClientSecret(linkedinAccount.metadata.client_secret)
         }
 
         const googleAccount = data.find((acc: any) => acc.platform === 'google_ads')
