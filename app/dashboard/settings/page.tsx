@@ -115,27 +115,48 @@ export default function SettingsPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('tenant_id')
         .eq('id', user.id)
         .single()
-      
-      if (profile?.tenant_id) {
-        const { data, error } = await supabase
-          .from('ad_accounts')
-          .select('*')
-          .eq('tenant_id', profile.tenant_id)
-          .order('created_at', { ascending: false })
-        
-        if (error) {
-          console.error('Error loading ad accounts:', error)
-          return
+
+      if (!profile?.tenant_id) return
+
+      const { data, error } = await supabase
+        .from('ad_accounts')
+        .select('id, tenant_id, platform, account_id, account_name, status, last_synced_at, metadata')
+        .eq('tenant_id', profile.tenant_id)
+        .order('updated_at', { ascending: false })
+
+      if (error) {
+        console.error('Error loading ad accounts:', error)
+        return
+      }
+
+      if (data) {
+        setAdAccounts(data)
+
+        const metaAccount = data.find((acc: any) => acc.platform === 'meta_ads')
+        if (metaAccount?.metadata?.app_id) {
+          setMetaAppId(metaAccount.metadata.app_id)
         }
-        
-        if (data) {
-          setAdAccounts(data)
+
+        const linkedinAccount = data.find((acc: any) => acc.platform === 'linkedin_ads')
+        if (linkedinAccount?.metadata?.client_id) {
+          setLinkedinClientId(linkedinAccount.metadata.client_id)
+        }
+
+        const googleAccount = data.find((acc: any) => acc.platform === 'google_ads')
+        if (googleAccount?.metadata?.client_id) {
+          setGoogleClientId(googleAccount.metadata.client_id)
+        }
+        if (googleAccount?.metadata?.developer_token) {
+          setGoogleDeveloperToken(googleAccount.metadata.developer_token)
+        }
+        if (googleAccount?.account_id) {
+          setGoogleCustomerId(googleAccount.account_id)
         }
       }
     } catch (err) {

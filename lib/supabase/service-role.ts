@@ -1,18 +1,21 @@
 import { createClient } from '@supabase/supabase-js'
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const rawServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-if (!url) {
+if (!rawUrl) {
   throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is not set')
 }
 
-if (!serviceRoleKey) {
+if (!rawServiceRoleKey) {
   throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is not set')
 }
 
+const supabaseUrl: string = rawUrl
+const supabaseServiceRoleKey: string = rawServiceRoleKey
+
 export function createServiceRoleClient() {
-  return createClient(url, serviceRoleKey, {
+  return createClient(supabaseUrl, supabaseServiceRoleKey, {
     auth: {
       persistSession: false,
     },
