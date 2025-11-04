@@ -44,16 +44,62 @@ export async function POST(request: NextRequest) {
       .eq('tenant_id', profile?.tenant_id)
       .limit(50)
 
-    // Fetch recent metrics with campaign platform info
+    // Fetch recent metrics - separate query to avoid JOIN type issues
     const { data: recentMetrics } = await supabase
       .from('campaign_metrics')
-      .select(`
-        date, impressions, clicks, conversions, spend, revenue,
-        campaigns!inner(platform)
-      `)
+      .select('date, impressions, clicks, conversions, spend, revenue, campaign_id')
       .eq('tenant_id', profile?.tenant_id)
       .order('date', { ascending: false })
       .limit(100)
+
+    // Build campaign platform map for metrics lookup
+    // campaign_metrics.campaign_id is the database UUID (campaigns.id), not the API campaign_id
+    const campaignPlatformMap = new Map<string, string>()
+    if (campaigns) {
+      for (const campaign of campaigns) {
+        // Map by campaign.id (database UUID) - this is what campaign_metrics.campaign_id references
+        campaignPlatformMap.set(campaign.id, campaign.platform)
+      }
+    }
+
+    // Also fetch any campaigns that might be missing from the initial query
+    if (recentMetrics && recentMetrics.length > 0) {
+      const campaignIds = [...new Set(recentMetrics.map((m: any) => m.campaign_id).filter(Boolean))]
+      const existingIds = new Set(campaigns?.map((c: any) => c.id) || [])
+      const missingIds = campaignIds.filter((id) => !existingIds.has(id))
+      
+      if (missingIds.length > 0) {
+        const { data: campaignPlatforms } = await supabase
+          .from('campaigns')
+          .select('id, platform')
+          .eq('tenant_id', profile?.tenant_id)
+          .in('id', missingIds)
+
+        if (campaignPlatforms) {
+          for (const campaign of campaignPlatforms) {
+            campaignPlatformMap.set(campaign.id, campaign.platform)
+          }
+        }
+      }
+    }
+
+    // Also fetch campaign IDs to platform mapping
+    if (recentMetrics && recentMetrics.length > 0) {
+      const campaignIds = [...new Set(recentMetrics.map((m: any) => m.campaign_id).filter(Boolean))]
+      if (campaignIds.length > 0) {
+        const { data: campaignPlatforms } = await supabase
+          .from('campaigns')
+          .select('id, campaign_id, platform')
+          .eq('tenant_id', profile?.tenant_id)
+          .in('id', campaignIds)
+
+        if (campaignPlatforms) {
+          for (const campaign of campaignPlatforms) {
+            campaignPlatformMap.set(campaign.id, campaign.platform)
+          }
+        }
+      }
+    }
 
     // Calculate summary stats
     const totalSpend = recentMetrics?.reduce((sum, m) => sum + (Number(m.spend) || 0), 0) || 0
@@ -63,20 +109,12 @@ export async function POST(request: NextRequest) {
     const totalClicks = recentMetrics?.reduce((sum, m) => sum + (m.clicks || 0), 0) || 0
     const avgROAS = totalSpend > 0 ? totalRevenue / totalSpend : 0
 
-    // Build campaign platform map for metrics lookup
-    const campaignPlatformMap = new Map<string, string>()
-    if (campaigns) {
-      for (const campaign of campaigns) {
-        campaignPlatformMap.set(campaign.id, campaign.platform)
-      }
-    }
-
     // Calculate platform-specific stats
     const platformStats: Record<string, any> = {}
     if (recentMetrics) {
       for (const metric of recentMetrics) {
-        // Try to get platform from joined data or fallback to map lookup
-        const platform = (metric.campaigns as any)?.platform || campaignPlatformMap.get(metric.campaign_id) || 'unknown'
+        // Get platform from campaign map using campaign_id
+        const platform = campaignPlatformMap.get(metric.campaign_id) || 'unknown'
         if (!platformStats[platform]) {
           platformStats[platform] = {
             spend: 0,
@@ -155,7 +193,7 @@ ${JSON.stringify(
   recentMetrics
     ?.slice(0, 14)
     .map((m: any) => {
-      const platform = (m.campaigns as any)?.platform || campaignPlatformMap.get(m.campaign_id) || 'unknown'
+      const platform = campaignPlatformMap.get(m.campaign_id) || 'unknown'
       return {
         date: m.date,
         platform: platform.replace('_ads', '').toUpperCase(),
