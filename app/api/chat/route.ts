@@ -83,24 +83,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Also fetch campaign IDs to platform mapping
-    if (recentMetrics && recentMetrics.length > 0) {
-      const campaignIds = [...new Set(recentMetrics.map((m: any) => m.campaign_id).filter(Boolean))]
-      if (campaignIds.length > 0) {
-        const { data: campaignPlatforms } = await supabase
-          .from('campaigns')
-          .select('id, campaign_id, platform')
-          .eq('tenant_id', profile?.tenant_id)
-          .in('id', campaignIds)
-
-        if (campaignPlatforms) {
-          for (const campaign of campaignPlatforms) {
-            campaignPlatformMap.set(campaign.id, campaign.platform)
-          }
-        }
-      }
-    }
-
     // Calculate summary stats
     const totalSpend = recentMetrics?.reduce((sum, m) => sum + (Number(m.spend) || 0), 0) || 0
     const totalRevenue = recentMetrics?.reduce((sum, m) => sum + (Number(m.revenue) || 0), 0) || 0
