@@ -56,6 +56,33 @@ export default function SettingsPage() {
     
     if (successMessage) {
       setSuccess(successMessage)
+      // Reload accounts to show updated status
+      loadAdAccounts()
+      
+      // If sync message in success, trigger sync after a delay
+      if (successMessage.includes('Syncing')) {
+        setTimeout(async () => {
+          setLoading(true)
+          try {
+            const response = await fetch('/api/sync-data', { method: 'POST' })
+            const data = await response.json()
+            if (response.ok) {
+              const results = data.results || []
+              const totalCampaigns = results.reduce((sum: number, r: any) => sum + (r.campaigns || 0), 0)
+              const totalMetrics = results.reduce((sum: number, r: any) => sum + (r.metrics || 0), 0)
+              setSuccess(`✅ Connection successful! Synced ${totalCampaigns} campaigns and ${totalMetrics} metric records. Check your dashboard!`)
+              await loadAdAccounts()
+            } else {
+              setError(`Sync completed but encountered issues: ${data.error || 'Unknown error'}`)
+            }
+          } catch (err: any) {
+            setError(`Auto-sync failed: ${err.message}. Please try manual sync.`)
+          } finally {
+            setLoading(false)
+          }
+        }, 2000)
+      }
+      
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname)
     }
@@ -85,8 +112,35 @@ export default function SettingsPage() {
   }
 
   const loadAdAccounts = async () => {
-    const { data } = await supabase.from('ad_accounts').select('*')
-    if (data) setAdAccounts(data)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', user.id)
+        .single()
+      
+      if (profile?.tenant_id) {
+        const { data, error } = await supabase
+          .from('ad_accounts')
+          .select('*')
+          .eq('tenant_id', profile.tenant_id)
+          .order('created_at', { ascending: false })
+        
+        if (error) {
+          console.error('Error loading ad accounts:', error)
+          return
+        }
+        
+        if (data) {
+          setAdAccounts(data)
+        }
+      }
+    } catch (err) {
+      console.error('Error loading ad accounts:', err)
+    }
   }
 
   const handleSaveProfile = async () => {
@@ -197,8 +251,13 @@ export default function SettingsPage() {
         .eq('id', user?.id)
         .single()
 
+      // Validate inputs
       if (!metaAppId || !metaAppSecret) {
-        throw new Error('Please fill in all required Meta Ads credentials')
+        throw new Error('Please fill in all required Meta Ads credentials (App ID and App Secret)')
+      }
+      
+      if (metaAppId.trim().length === 0 || metaAppSecret.trim().length === 0) {
+        throw new Error('App ID and App Secret cannot be empty')
       }
 
       // Save app credentials first (account_id and tokens will be set via OAuth)
@@ -218,10 +277,13 @@ export default function SettingsPage() {
 
       if (upsertError) throw upsertError
 
-      // Redirect to OAuth flow
+      // Reload accounts to show pending status
+      await loadAdAccounts()
+
+      // Redirect to OAuth flow (don't set loading to false - redirect will happen)
       window.location.href = '/auth/meta'
     } catch (err: any) {
-      setError(err.message)
+      setError(err.message || 'Failed to connect Meta Ads. Please try again.')
       setLoading(false)
     }
   }
@@ -242,8 +304,13 @@ export default function SettingsPage() {
         .eq('id', user?.id)
         .single()
 
+      // Validate inputs
       if (!linkedinClientId || !linkedinClientSecret) {
-        throw new Error('Please fill in all required LinkedIn Ads credentials')
+        throw new Error('Please fill in all required LinkedIn Ads credentials (Client ID and Client Secret)')
+      }
+      
+      if (linkedinClientId.trim().length === 0 || linkedinClientSecret.trim().length === 0) {
+        throw new Error('Client ID and Client Secret cannot be empty')
       }
 
       // Save app credentials first (account_id and token will be set via OAuth)
@@ -263,21 +330,37 @@ export default function SettingsPage() {
 
       if (upsertError) throw upsertError
 
-      // Redirect to OAuth flow
+      // Reload accounts to show pending status
+      await loadAdAccounts()
+
+      // Redirect to OAuth flow (don't set loading to false - redirect will happen)
       window.location.href = '/auth/linkedin'
     } catch (err: any) {
-      setError(err.message)
+      setError(err.message || 'Failed to connect LinkedIn Ads. Please try again.')
       setLoading(false)
     }
   }
 
   const handleDisconnectAccount = async (accountId: string) => {
+    if (!confirm('Are you sure you want to disconnect this account? You will need to reconnect to sync data again.')) {
+      return
+    }
+
     try {
-      await supabase.from('ad_accounts').delete().eq('id', accountId)
+      setLoading(true)
+      setError(null)
+      setSuccess(null)
+
+      const { error } = await supabase.from('ad_accounts').delete().eq('id', accountId)
+      
+      if (error) throw error
+
       setSuccess('Account disconnected successfully!')
-      loadAdAccounts()
+      await loadAdAccounts()
     } catch (err: any) {
-      setError(err.message)
+      setError(err.message || 'Failed to disconnect account. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -294,12 +377,41 @@ export default function SettingsPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to sync data')
+        const errorMessage = data.error || data.details || 'Failed to sync data'
+        throw new Error(errorMessage)
       }
 
-      setSuccess('Data synced successfully! Check your dashboard for updated metrics.')
+      // Parse sync results
+      const results = data.results || []
+      const successCount = results.filter((r: any) => r.status === 'success').length
+      const errorCount = results.filter((r: any) => r.status === 'error').length
+      
+      if (successCount > 0) {
+        const totalCampaigns = results.reduce((sum: number, r: any) => sum + (r.campaigns || 0), 0)
+        const totalMetrics = results.reduce((sum: number, r: any) => sum + (r.metrics || 0), 0)
+        
+        let message = `Data synced successfully! Fetched ${totalCampaigns} campaigns and ${totalMetrics} metric records.`
+        
+        if (errorCount > 0) {
+          message += ` (${errorCount} platform(s) had errors - check details below)`
+        }
+        
+        setSuccess(message)
+        
+        // Reload accounts to show updated last_synced_at
+        await loadAdAccounts()
+      } else if (errorCount > 0) {
+        const errorMessages = results
+          .filter((r: any) => r.status === 'error')
+          .map((r: any) => `${r.platform}: ${r.message || 'Unknown error'}`)
+          .join('; ')
+        
+        throw new Error(`Sync failed: ${errorMessages}`)
+      } else {
+        setSuccess('Sync completed, but no data was found. Make sure you have active campaigns in your ad accounts.')
+      }
     } catch (err: any) {
-      setError(err.message)
+      setError(err.message || 'Failed to sync data. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -569,9 +681,18 @@ export default function SettingsPage() {
                   </Button>
                 </Link>
               </div>
-              <Button onClick={handleConnectMetaAds} disabled={loading}>
-                <LinkIcon className="w-4 h-4 mr-2" />
-                Connect Meta Ads (OAuth)
+              <Button onClick={handleConnectMetaAds} disabled={loading || !metaAppId || !metaAppSecret}>
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Connecting...
+                  </>
+                ) : (
+                  <>
+                    <LinkIcon className="w-4 h-4 mr-2" />
+                    Connect Meta Ads (OAuth)
+                  </>
+                )}
               </Button>
             </CardContent>
           </Card>
@@ -618,9 +739,18 @@ export default function SettingsPage() {
                   </Button>
                 </Link>
               </div>
-              <Button onClick={handleConnectLinkedInAds} disabled={loading}>
-                <LinkIcon className="w-4 h-4 mr-2" />
-                Connect LinkedIn Ads (OAuth)
+              <Button onClick={handleConnectLinkedInAds} disabled={loading || !linkedinClientId || !linkedinClientSecret}>
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Connecting...
+                  </>
+                ) : (
+                  <>
+                    <LinkIcon className="w-4 h-4 mr-2" />
+                    Connect LinkedIn Ads (OAuth)
+                  </>
+                )}
               </Button>
             </CardContent>
           </Card>
@@ -638,7 +768,17 @@ export default function SettingsPage() {
                 </div>
                 {adAccounts.length > 0 && (
                   <Button onClick={handleSyncData} disabled={loading}>
-                    {loading ? 'Syncing...' : 'Sync Data'}
+                    {loading ? (
+                      <>
+                        <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Syncing...
+                      </>
+                    ) : (
+                      <>
+                        <LinkIcon className="w-4 h-4 mr-2" />
+                        Sync Data
+                      </>
+                    )}
                   </Button>
                 )}
               </div>
@@ -664,6 +804,11 @@ export default function SettingsPage() {
                           <p className="text-sm text-gray-500 dark:text-gray-400">
                             Account ID: {account.account_id}
                           </p>
+                          {account.last_synced_at && (
+                            <p className="text-xs text-gray-400 dark:text-gray-500">
+                              Last synced: {new Date(account.last_synced_at).toLocaleString()}
+                            </p>
+                          )}
                         </div>
                         <Badge
                           variant={account.status === 'active' ? 'default' : 'secondary'}
