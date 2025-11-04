@@ -230,11 +230,10 @@ export async function GET(request: NextRequest) {
       page_ids: pages.map((page) => page.id),
     }
 
-    // Update or insert ad_accounts
-    const { error: upsertError } = await supabase.from('ad_accounts').upsert(
-      {
-        tenant_id: profile.tenant_id,
-        platform: 'meta_ads',
+    // Update existing ad_account row that stored the credentials during onboarding/settings
+    const { error: updateError } = await supabase
+      .from('ad_accounts')
+      .update({
         account_id: firstAccount.id,
         account_name: firstAccount.name || 'Meta Ads Account',
         ...tokenUpdate,
@@ -244,13 +243,10 @@ export async function GET(request: NextRequest) {
         status: 'active',
         metadata,
         updated_at: new Date().toISOString(),
-      },
-      {
-        onConflict: 'tenant_id,platform,account_id',
-      }
-    )
+      })
+      .eq('id', adAccount.id)
 
-    if (upsertError) throw upsertError
+    if (updateError) throw updateError
 
     logOAuthEvent('meta_ads', 'success', user.id)
 
