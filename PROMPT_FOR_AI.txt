@@ -1,0 +1,38 @@
+COPY AND PASTE THIS TO AN AI WITH SUPABASE/VERCEL ACCESS:
+================================================================================
+
+I need you to apply critical database fixes and deploy code for my ads chatbot app.
+
+Repository: /home/user/ads_chatbot
+Branch: claude/fix-app-issues-011CV57tWqRivHj4eBa95CwH
+Latest Commit: 4192f68
+
+TASK 1 - APPLY DATABASE MIGRATION (CRITICAL):
+
+1. Read the SQL file: migrations/fix_ad_accounts_duplicates.sql
+2. Execute it on my Supabase database
+3. Verify no duplicates remain by running:
+   SELECT tenant_id, platform, COUNT(*) FROM ad_accounts GROUP BY tenant_id, platform HAVING COUNT(*) > 1;
+4. Confirm the new UNIQUE constraint exists on (tenant_id, platform)
+5. Report results
+
+TASK 2 - VERIFY VERCEL DEPLOYMENT:
+
+1. Check if commit 4192f68 is deployed on Vercel
+2. If not, trigger deployment from branch: claude/fix-app-issues-011CV57tWqRivHj4eBa95CwH
+3. Verify these environment variables are set:
+   - NEXT_PUBLIC_SUPABASE_URL
+   - NEXT_PUBLIC_SUPABASE_ANON_KEY
+   - ANTHROPIC_API_KEY
+   - ENCRYPTION_KEY
+4. Test the /api/health endpoint
+5. Report deployment URL and status
+
+CONTEXT:
+This fixes a critical issue where duplicate ad_accounts entries prevented the app from working. The migration removes duplicates and changes the constraint from UNIQUE(tenant_id, platform, account_id) to UNIQUE(tenant_id, platform).
+
+Read INSTRUCTIONS_FOR_AI_DEPLOYMENT.md for detailed steps if needed.
+
+Please execute both tasks and report results.
+
+================================================================================

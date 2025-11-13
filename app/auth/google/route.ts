@@ -117,16 +117,17 @@ export async function GET(request: NextRequest) {
       throw new Error('No tenant found')
     }
 
-    // Get credentials again
+    // Get credentials again - query by (tenant_id, platform) to find the account
+    // This ensures we update the same account even if credentials were changed
     const { data: adAccount } = await supabase
       .from('ad_accounts')
       .select('id, metadata, account_id')
       .eq('tenant_id', profile.tenant_id)
       .eq('platform', 'google_ads')
-      .single()
+      .maybeSingle()
 
     if (!adAccount) {
-      throw new Error('Google Ads account not found')
+      throw new Error('Google Ads account not found. Please configure credentials in Settings first.')
     }
 
     // Exchange code for tokens
@@ -161,6 +162,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Update ad_accounts with refresh token
+    // Note: We update by (tenant_id, platform) to ensure we always update the correct record
     const { error: updateError } = await supabase
       .from('ad_accounts')
       .update({
@@ -170,7 +172,8 @@ export async function GET(request: NextRequest) {
         last_synced_at: null, // Reset sync time
         updated_at: new Date().toISOString(),
       })
-      .eq('id', adAccount.id)
+      .eq('tenant_id', profile.tenant_id)
+      .eq('platform', 'google_ads')
 
     if (updateError) throw updateError
 

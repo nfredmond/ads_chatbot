@@ -113,7 +113,8 @@ export async function GET(request: NextRequest) {
       throw new Error('No tenant found')
     }
 
-    // Get LinkedIn account
+    // Get LinkedIn account - query by (tenant_id, platform) to find the account
+    // This ensures we update the same account even if credentials were changed
     const { data: adAccount } = await supabase
       .from('ad_accounts')
       .select('id, metadata')
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
       .maybeSingle()
 
     if (!adAccount) {
-      throw new Error('LinkedIn Ads account not configured')
+      throw new Error('LinkedIn Ads account not configured. Please add your Client ID and Secret in Settings first.')
     }
 
     // Exchange code for access token
@@ -198,6 +199,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Update existing ad_account row that stored the credentials during onboarding/settings
+    // Note: We update by (tenant_id, platform) to ensure we always update the correct record
     const { error: updateError } = await supabase
       .from('ad_accounts')
       .update({
@@ -209,7 +211,8 @@ export async function GET(request: NextRequest) {
         metadata,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', adAccount.id)
+      .eq('tenant_id', profile.tenant_id)
+      .eq('platform', 'linkedin_ads')
 
     if (updateError) throw updateError
 
