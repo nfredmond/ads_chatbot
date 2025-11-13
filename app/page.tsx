@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { BarChart3, MessageSquare, TrendingUp } from 'lucide-react'
 
@@ -19,6 +20,16 @@ export default async function Home() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-6 py-16">
         <div className="text-center space-y-8">
+          <div className="flex justify-center">
+            <Image
+              src="/logo.png"
+              alt="Marketing Analytics Chatbot logo"
+              width={96}
+              height={96}
+              priority
+              className="drop-shadow-lg"
+            />
+          </div>
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white">
             Marketing Analytics <span className="text-blue-600">Chatbot</span>
           </h1>

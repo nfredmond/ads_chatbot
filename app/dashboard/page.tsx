@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { MetricsOverview } from '@/components/dashboard/metrics-overview'
 import { CampaignPerformance } from '@/components/dashboard/campaign-performance'
@@ -57,13 +58,22 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold dark:text-white">Dashboard</h1>
-          {profile?.full_name && (
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Welcome back, {profile.full_name}!
-            </p>
-          )}
+        <div className="flex items-center space-x-3">
+          <Image
+            src="/logo.png"
+            alt="Marketing Analytics Chatbot logo"
+            width={40}
+            height={40}
+            className="rounded-lg"
+          />
+          <div>
+            <h1 className="text-3xl font-bold dark:text-white">Dashboard</h1>
+            {profile?.full_name && (
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                Welcome back, {profile.full_name}!
+              </p>
+            )}
+          </div>
         </div>
       </div>
 

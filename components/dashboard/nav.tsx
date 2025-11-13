@@ -15,6 +15,7 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { BarChart3, MessageSquare, Settings, LogOut, BookOpen } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ThemeToggle } from '@/components/theme-toggle'
 
 interface DashboardNavProps {
@@ -38,8 +39,18 @@ export function DashboardNav({ user }: DashboardNavProps) {
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-8">
-            <Link href="/dashboard" className="text-xl font-bold text-blue-600 dark:text-blue-400">
-              Marketing Analytics
+            <Link
+              href="/dashboard"
+              className="flex items-center space-x-3 text-blue-600 dark:text-blue-400"
+            >
+              <Image
+                src="/logo.png"
+                alt="Marketing Analytics Chatbot logo"
+                width={36}
+                height={36}
+                className="rounded-lg"
+              />
+              <span className="text-xl font-bold leading-tight">Marketing Analytics</span>
             </Link>
             <div className="flex space-x-4">
               <Link

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -111,7 +112,16 @@ export default function ChatPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold dark:text-white">AI Marketing Assistant</h1>
+        <div className="flex items-center space-x-3">
+          <Image
+            src="/logo.png"
+            alt="Marketing Analytics Chatbot logo"
+            width={36}
+            height={36}
+            className="rounded-lg"
+          />
+          <h1 className="text-3xl font-bold dark:text-white">AI Marketing Assistant</h1>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
