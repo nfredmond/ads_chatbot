@@ -237,6 +237,8 @@ export default function SettingsPage() {
       }
 
       // Save credentials first (without tokens - they'll be added via OAuth)
+      // Note: We upsert by (tenant_id, platform) only to prevent duplicates
+      // The account_id will be verified/updated during OAuth flow
       const { error: upsertError } = await supabase.from('ad_accounts').upsert({
         tenant_id: profile?.tenant_id,
         platform: 'google_ads',
@@ -249,7 +251,7 @@ export default function SettingsPage() {
           developer_token: googleDeveloperToken,
         },
       }, {
-        onConflict: 'tenant_id,platform,account_id'
+        onConflict: 'tenant_id,platform'
       })
 
       if (upsertError) throw upsertError
@@ -288,10 +290,12 @@ export default function SettingsPage() {
       }
 
       // Save app credentials first (account_id and tokens will be set via OAuth)
+      // Note: We upsert by (tenant_id, platform) only to allow credential updates
+      // The actual ad account ID will be fetched during OAuth from Meta's API
       const { error: upsertError } = await supabase.from('ad_accounts').upsert({
         tenant_id: profile?.tenant_id,
         platform: 'meta_ads',
-        account_id: metaAppId, // Temporary, will be replaced with actual account ID
+        account_id: 'pending', // Temporary placeholder, will be replaced with actual account ID during OAuth
         account_name: 'Meta Ads Account',
         status: 'pending',
         metadata: {
@@ -299,7 +303,7 @@ export default function SettingsPage() {
           app_secret: metaAppSecret,
         },
       }, {
-        onConflict: 'tenant_id,platform,account_id'
+        onConflict: 'tenant_id,platform'
       })
 
       if (upsertError) throw upsertError
@@ -341,10 +345,12 @@ export default function SettingsPage() {
       }
 
       // Save app credentials first (account_id and token will be set via OAuth)
+      // Note: We upsert by (tenant_id, platform) only to allow credential updates
+      // The actual ad account ID will be fetched during OAuth from LinkedIn's API
       const { error: upsertError } = await supabase.from('ad_accounts').upsert({
         tenant_id: profile?.tenant_id,
         platform: 'linkedin_ads',
-        account_id: linkedinClientId, // Temporary, will be replaced with actual account ID
+        account_id: 'pending', // Temporary placeholder, will be replaced with actual account ID during OAuth
         account_name: 'LinkedIn Ads Account',
         status: 'pending',
         metadata: {
@@ -352,7 +358,7 @@ export default function SettingsPage() {
           client_secret: linkedinClientSecret,
         },
       }, {
-        onConflict: 'tenant_id,platform,account_id'
+        onConflict: 'tenant_id,platform'
       })
 
       if (upsertError) throw upsertError
