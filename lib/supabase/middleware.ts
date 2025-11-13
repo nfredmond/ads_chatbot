@@ -6,6 +6,26 @@ export async function updateSession(request: NextRequest) {
     request,
   })
 
+  const publicRoutePrefixes = [
+    '/', // marketing landing page
+    '/login',
+    '/signup',
+    '/auth',
+    '/privacy-policy',
+    '/terms-of-service',
+  ]
+
+  const isPublicRoute = publicRoutePrefixes.some(prefix => {
+    if (prefix === '/') {
+      return request.nextUrl.pathname === '/'
+    }
+
+    return (
+      request.nextUrl.pathname === prefix ||
+      request.nextUrl.pathname.startsWith(`${prefix}/`)
+    )
+  })
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -36,12 +56,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Redirect to login if user is not authenticated and trying to access protected routes
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/signup') &&
-    !request.nextUrl.pathname.startsWith('/auth')
-  ) {
+  if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
