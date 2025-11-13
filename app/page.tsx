@@ -66,10 +66,25 @@ export default async function Home() {
             </div>
           </div>
 
-          <div className="mt-16 text-center">
+          <div className="mt-16 text-center space-y-3">
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Trusted by marketing agencies worldwide
             </p>
+            <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-500 dark:text-gray-400">
+              <Link
+                href="/privacy-policy"
+                className="font-medium text-blue-600 underline-offset-4 hover:underline dark:text-blue-400"
+              >
+                Privacy Policy
+              </Link>
+              <span className="hidden h-1 w-1 rounded-full bg-gray-300 dark:bg-gray-600 md:inline-block" />
+              <Link
+                href="/terms-of-service"
+                className="font-medium text-blue-600 underline-offset-4 hover:underline dark:text-blue-400"
+              >
+                Terms of Service
+              </Link>
+            </div>
           </div>
         </div>
       </div>
