@@ -2,46 +2,51 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+
+interface MetricData {
+  date: string
+  spend: number
+  revenue: number
+  conversions: number
+}
 
 interface CampaignPerformanceProps {
   tenantId: string | null
 }
 
 export function CampaignPerformance({ tenantId }: CampaignPerformanceProps) {
-  const [data, setData] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const [data, setData] = useState<MetricData[]>([])
+  const [loading, setLoading] = useState(!!tenantId) // Only loading if we have a tenantId
+  const supabase = useMemo(() => createClient(), [])
+
+  const fetchData = useCallback(async () => {
+    if (!tenantId) return
+    
+    setLoading(true)
+    const { data: metricsData } = await supabase
+      .from('campaign_metrics')
+      .select('date, spend, revenue, conversions')
+      .eq('tenant_id', tenantId)
+      .order('date', { ascending: true })
+      .limit(30)
+
+    if (metricsData && metricsData.length > 0) {
+      const formattedData = metricsData.map((m) => ({
+        date: new Date(m.date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }),
+        spend: Number(m.spend) || 0,
+        revenue: Number(m.revenue) || 0,
+        conversions: Number(m.conversions) || 0,
+      }))
+      setData(formattedData)
+    }
+    setLoading(false)
+  }, [tenantId, supabase])
 
   useEffect(() => {
-    if (!tenantId) {
-      setLoading(false)
-      return
-    }
-
-    const fetchData = async () => {
-      const { data: metricsData } = await supabase
-        .from('campaign_metrics')
-        .select('date, spend, revenue, conversions')
-        .eq('tenant_id', tenantId)
-        .order('date', { ascending: true })
-        .limit(30)
-
-      if (metricsData && metricsData.length > 0) {
-        const formattedData = metricsData.map((m) => ({
-          date: new Date(m.date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' }),
-          spend: Number(m.spend) || 0,
-          revenue: Number(m.revenue) || 0,
-          conversions: m.conversions || 0,
-        }))
-        setData(formattedData)
-      }
-      setLoading(false)
-    }
-
     fetchData()
-  }, [tenantId])
+  }, [fetchData])
 
   return (
     <Card className="dark:bg-gray-800">

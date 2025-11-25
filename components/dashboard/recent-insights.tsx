@@ -3,39 +3,47 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AlertCircle, TrendingUp, AlertTriangle, Lightbulb } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+
+interface Insight {
+  id: string
+  title: string
+  description: string
+  insight_type: string
+  priority: 'high' | 'medium' | 'low'
+  status: string
+  created_at: string
+}
 
 interface RecentInsightsProps {
   tenantId: string | null
 }
 
 export function RecentInsights({ tenantId }: RecentInsightsProps) {
-  const [insights, setInsights] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const [insights, setInsights] = useState<Insight[]>([])
+  const [loading, setLoading] = useState(!!tenantId)
+  const supabase = useMemo(() => createClient(), [])
+
+  const fetchInsights = useCallback(async () => {
+    if (!tenantId) return
+    
+    setLoading(true)
+    const { data } = await supabase
+      .from('insights')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .in('status', ['new', 'viewed'])
+      .order('created_at', { ascending: false })
+      .limit(5)
+
+    if (data) setInsights(data as Insight[])
+    setLoading(false)
+  }, [tenantId, supabase])
 
   useEffect(() => {
-    if (!tenantId) {
-      setLoading(false)
-      return
-    }
-
-    const fetchInsights = async () => {
-      const { data } = await supabase
-        .from('insights')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(5)
-
-      if (data) setInsights(data)
-      setLoading(false)
-    }
-
     fetchInsights()
-  }, [tenantId])
+  }, [fetchInsights])
 
   const getIcon = (type: string) => {
     switch (type) {

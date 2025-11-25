@@ -8,7 +8,7 @@ import logger from '@/lib/logging/logger'
  * Verifies the connection status of Meta and LinkedIn ad accounts
  * Returns connection health and token expiration info
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient()
 

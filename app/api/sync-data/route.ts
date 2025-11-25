@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import logger, { logSyncOperation } from '@/lib/logging/logger'
 import { decryptAccountTokens } from '@/lib/security/ad-account-tokens'
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient()
 

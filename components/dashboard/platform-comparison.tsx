@@ -2,8 +2,21 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+
+interface PlatformStats {
+  spend: number
+  conversions: number
+  revenue: number
+}
+
+interface PlatformData {
+  platform: string
+  spend: number
+  conversions: number
+  roas: number
+}
 
 interface PlatformComparisonProps {
   tenantId: string | null
@@ -14,60 +27,58 @@ interface PlatformComparisonProps {
   }
 }
 
-export function PlatformComparison({ tenantId, connectedPlatforms }: PlatformComparisonProps) {
-  const [data, setData] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+export function PlatformComparison({ tenantId }: PlatformComparisonProps) {
+  const [data, setData] = useState<PlatformData[]>([])
+  const [loading, setLoading] = useState(!!tenantId)
+  const supabase = useMemo(() => createClient(), [])
+
+  const fetchData = useCallback(async () => {
+    if (!tenantId) return
+    
+    setLoading(true)
+    // Get campaigns grouped by platform
+    const { data: campaigns } = await supabase
+      .from('campaigns')
+      .select('id, platform')
+      .eq('tenant_id', tenantId)
+
+    if (campaigns && campaigns.length > 0) {
+      const platformStats: Record<string, PlatformStats> = {}
+
+      for (const campaign of campaigns) {
+        const { data: metrics } = await supabase
+          .from('campaign_metrics')
+          .select('spend, conversions, revenue')
+          .eq('campaign_id', campaign.id)
+
+        if (metrics) {
+          const platformName = campaign.platform.replace('_', ' ')
+          if (!platformStats[platformName]) {
+            platformStats[platformName] = { spend: 0, conversions: 0, revenue: 0 }
+          }
+          metrics.forEach((m) => {
+            platformStats[platformName].spend += Number(m.spend) || 0
+            platformStats[platformName].conversions += Number(m.conversions) || 0
+            platformStats[platformName].revenue += Number(m.revenue) || 0
+          })
+        }
+      }
+
+      const formattedData = Object.entries(platformStats).map(([platform, stats]) => ({
+        platform: platform.charAt(0).toUpperCase() + platform.slice(1),
+        spend: stats.spend,
+        conversions: stats.conversions,
+        roas: stats.spend > 0 ? stats.revenue / stats.spend : 0,
+      }))
+
+      setData(formattedData)
+    }
+    setLoading(false)
+  }, [tenantId, supabase])
 
   useEffect(() => {
-    if (!tenantId) {
-      setLoading(false)
-      return
-    }
-
-    const fetchData = async () => {
-      // Get campaigns grouped by platform
-      const { data: campaigns } = await supabase
-        .from('campaigns')
-        .select('id, platform')
-        .eq('tenant_id', tenantId)
-
-      if (campaigns && campaigns.length > 0) {
-        const platformStats: any = {}
-
-        for (const campaign of campaigns) {
-          const { data: metrics } = await supabase
-            .from('campaign_metrics')
-            .select('spend, conversions, revenue')
-            .eq('campaign_id', campaign.id)
-
-          if (metrics) {
-            const platformName = campaign.platform.replace('_', ' ')
-            if (!platformStats[platformName]) {
-              platformStats[platformName] = { spend: 0, conversions: 0, revenue: 0 }
-            }
-            metrics.forEach((m) => {
-              platformStats[platformName].spend += Number(m.spend) || 0
-              platformStats[platformName].conversions += m.conversions || 0
-              platformStats[platformName].revenue += Number(m.revenue) || 0
-            })
-          }
-        }
-
-        const formattedData = Object.entries(platformStats).map(([platform, stats]: [string, any]) => ({
-          platform: platform.charAt(0).toUpperCase() + platform.slice(1),
-          spend: stats.spend,
-          conversions: stats.conversions,
-          roas: stats.spend > 0 ? stats.revenue / stats.spend : 0,
-        }))
-
-        setData(formattedData)
-      }
-      setLoading(false)
-    }
-
     fetchData()
-  }, [tenantId])
+  }, [fetchData])
 
   return (
     <Card className="dark:bg-gray-800">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -12,11 +12,30 @@ import { Separator } from '@/components/ui/separator'
 import { createClient } from '@/lib/supabase/client'
 import { Key, Link as LinkIcon, Check, X } from 'lucide-react'
 
+interface AdAccount {
+  id: string
+  tenant_id: string
+  platform: string
+  account_id: string
+  account_name: string
+  status: string
+  last_synced_at: string | null
+  metadata: Record<string, string>
+}
+
+interface SyncResult {
+  platform: string
+  status: string
+  campaigns?: number
+  metrics?: number
+  message?: string
+}
+
 export default function SettingsPage() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [adAccounts, setAdAccounts] = useState<any[]>([])
+  const [adAccounts, setAdAccounts] = useState<AdAccount[]>([])
 
   // Profile state
   const [fullName, setFullName] = useState('')
@@ -36,14 +55,92 @@ export default function SettingsPage() {
   // Meta Ads state
   const [metaAppId, setMetaAppId] = useState('')
   const [metaAppSecret, setMetaAppSecret] = useState('')
-  const [metaAccessToken, setMetaAccessToken] = useState('')
+  // Note: Meta access token is obtained via OAuth flow, not stored directly
+  const [_metaAccessToken, _setMetaAccessToken] = useState('')
 
   // LinkedIn Ads state
   const [linkedinClientId, setLinkedinClientId] = useState('')
   const [linkedinClientSecret, setLinkedinClientSecret] = useState('')
-  const [linkedinAccessToken, setLinkedinAccessToken] = useState('')
+  // Note: LinkedIn access token is obtained via OAuth flow, not stored directly
+  const [_linkedinAccessToken, _setLinkedinAccessToken] = useState('')
 
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
+
+  const loadProfile = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, organization, phone')
+        .eq('id', user.id)
+        .single()
+      
+      if (profile) {
+        setFullName(profile.full_name || '')
+        setOrganization(profile.organization || '')
+        setPhone(profile.phone || '')
+      }
+    }
+  }, [supabase])
+
+  const loadAdAccounts = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', user.id)
+        .single()
+
+      if (!profile?.tenant_id) return
+
+      const { data, error: loadError } = await supabase
+        .from('ad_accounts')
+        .select('id, tenant_id, platform, account_id, account_name, status, last_synced_at, metadata')
+        .eq('tenant_id', profile.tenant_id)
+        .order('updated_at', { ascending: false })
+
+      if (loadError) {
+        console.error('Error loading ad accounts:', loadError)
+        return
+      }
+
+      if (data) {
+        setAdAccounts(data as AdAccount[])
+
+        const metaAccount = data.find((acc) => acc.platform === 'meta_ads')
+        if (metaAccount?.metadata?.app_id) {
+          setMetaAppId(metaAccount.metadata.app_id)
+        }
+        if (metaAccount?.metadata?.app_secret) {
+          setMetaAppSecret(metaAccount.metadata.app_secret)
+        }
+
+        const linkedinAccount = data.find((acc) => acc.platform === 'linkedin_ads')
+        if (linkedinAccount?.metadata?.client_id) {
+          setLinkedinClientId(linkedinAccount.metadata.client_id)
+        }
+        if (linkedinAccount?.metadata?.client_secret) {
+          setLinkedinClientSecret(linkedinAccount.metadata.client_secret)
+        }
+
+        const googleAccount = data.find((acc) => acc.platform === 'google_ads')
+        if (googleAccount?.metadata?.client_id) {
+          setGoogleClientId(googleAccount.metadata.client_id)
+        }
+        if (googleAccount?.metadata?.developer_token) {
+          setGoogleDeveloperToken(googleAccount.metadata.developer_token)
+        }
+        if (googleAccount?.account_id) {
+          setGoogleCustomerId(googleAccount.account_id)
+        }
+      }
+    } catch (err) {
+      console.error('Error loading ad accounts:', err)
+    }
+  }, [supabase])
 
   useEffect(() => {
     loadProfile()
@@ -67,16 +164,17 @@ export default function SettingsPage() {
             const response = await fetch('/api/sync-data', { method: 'POST' })
             const data = await response.json()
             if (response.ok) {
-              const results = data.results || []
-              const totalCampaigns = results.reduce((sum: number, r: any) => sum + (r.campaigns || 0), 0)
-              const totalMetrics = results.reduce((sum: number, r: any) => sum + (r.metrics || 0), 0)
+              const results: SyncResult[] = data.results || []
+              const totalCampaigns = results.reduce((sum, r) => sum + (r.campaigns || 0), 0)
+              const totalMetrics = results.reduce((sum, r) => sum + (r.metrics || 0), 0)
               setSuccess(`✅ Connection successful! Synced ${totalCampaigns} campaigns and ${totalMetrics} metric records. Check your dashboard!`)
               await loadAdAccounts()
             } else {
               setError(`Sync completed but encountered issues: ${data.error || 'Unknown error'}`)
             }
-          } catch (err: any) {
-            setError(`Auto-sync failed: ${err.message}. Please try manual sync.`)
+          } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+            setError(`Auto-sync failed: ${errorMessage}. Please try manual sync.`)
           } finally {
             setLoading(false)
           }
@@ -92,83 +190,7 @@ export default function SettingsPage() {
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname)
     }
-  }, [])
-
-  const loadProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name, organization, phone')
-        .eq('id', user.id)
-        .single()
-      
-      if (profile) {
-        setFullName(profile.full_name || '')
-        setOrganization(profile.organization || '')
-        setPhone(profile.phone || '')
-      }
-    }
-  }
-
-  const loadAdAccounts = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('tenant_id')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile?.tenant_id) return
-
-      const { data, error } = await supabase
-        .from('ad_accounts')
-        .select('id, tenant_id, platform, account_id, account_name, status, last_synced_at, metadata')
-        .eq('tenant_id', profile.tenant_id)
-        .order('updated_at', { ascending: false })
-
-      if (error) {
-        console.error('Error loading ad accounts:', error)
-        return
-      }
-
-      if (data) {
-        setAdAccounts(data)
-
-        const metaAccount = data.find((acc: any) => acc.platform === 'meta_ads')
-        if (metaAccount?.metadata?.app_id) {
-          setMetaAppId(metaAccount.metadata.app_id)
-        }
-        if (metaAccount?.metadata?.app_secret) {
-          setMetaAppSecret(metaAccount.metadata.app_secret)
-        }
-
-        const linkedinAccount = data.find((acc: any) => acc.platform === 'linkedin_ads')
-        if (linkedinAccount?.metadata?.client_id) {
-          setLinkedinClientId(linkedinAccount.metadata.client_id)
-        }
-        if (linkedinAccount?.metadata?.client_secret) {
-          setLinkedinClientSecret(linkedinAccount.metadata.client_secret)
-        }
-
-        const googleAccount = data.find((acc: any) => acc.platform === 'google_ads')
-        if (googleAccount?.metadata?.client_id) {
-          setGoogleClientId(googleAccount.metadata.client_id)
-        }
-        if (googleAccount?.metadata?.developer_token) {
-          setGoogleDeveloperToken(googleAccount.metadata.developer_token)
-        }
-        if (googleAccount?.account_id) {
-          setGoogleCustomerId(googleAccount.account_id)
-        }
-      }
-    } catch (err) {
-      console.error('Error loading ad accounts:', err)
-    }
-  }
+  }, [loadProfile, loadAdAccounts])
 
   const handleSaveProfile = async () => {
     setLoading(true)

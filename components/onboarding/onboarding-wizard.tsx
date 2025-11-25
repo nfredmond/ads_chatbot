@@ -60,7 +60,7 @@ export function OnboardingWizard({ userId, userEmail }: OnboardingWizardProps) {
     setLoading(true)
     try {
       // Get or create tenant
-      let { data: profile } = await supabase
+      const { data: profile } = await supabase
         .from('profiles')
         .select('tenant_id')
         .eq('id', userId)

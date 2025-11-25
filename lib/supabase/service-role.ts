@@ -1,20 +1,30 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const rawServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+/**
+ * Creates a Supabase client with service role privileges.
+ * This client bypasses Row Level Security and should only be used
+ * for server-side operations that need elevated permissions.
+ * 
+ * @throws Error if environment variables are not set at runtime
+ */
+export function createServiceRoleClient(): SupabaseClient {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-if (!rawUrl) {
-  throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is not set')
-}
+  if (!supabaseUrl) {
+    throw new Error(
+      'NEXT_PUBLIC_SUPABASE_URL environment variable is not set. ' +
+      'Please add it to your .env.local file.'
+    )
+  }
 
-if (!rawServiceRoleKey) {
-  throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is not set')
-}
+  if (!supabaseServiceRoleKey) {
+    throw new Error(
+      'SUPABASE_SERVICE_ROLE_KEY environment variable is not set. ' +
+      'Please add it to your .env.local file.'
+    )
+  }
 
-const supabaseUrl: string = rawUrl
-const supabaseServiceRoleKey: string = rawServiceRoleKey
-
-export function createServiceRoleClient() {
   return createClient(supabaseUrl, supabaseServiceRoleKey, {
     auth: {
       persistSession: false,
