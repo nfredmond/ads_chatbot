@@ -190,11 +190,6 @@ export async function POST(request: NextRequest) {
       };
     }).sort((a, b) => b.spend - a.spend);
 
-    // Calculate insights
-    const avgCPC = totalClicks > 0 ? totalSpend / totalClicks : 0;
-    const conversionRate = totalClicks > 0 ? (totalConversions / totalClicks) * 100 : 0;
-    const costPerConversion = totalConversions > 0 ? totalSpend / totalConversions : 0;
-
     console.log(`Chat API: User ${user?.id}, Tenant ${tenantId}, Accounts: ${adAccounts.length}, Campaigns: ${campaigns.length}, Metrics: ${recentMetrics.length}, Customers: ${customerMetrics.length}`);
 
     // Build campaign platform map
@@ -210,6 +205,11 @@ export async function POST(request: NextRequest) {
     const totalImpressions = recentMetrics.reduce((sum, m) => sum + (m.impressions || 0), 0);
     const totalClicks = recentMetrics.reduce((sum, m) => sum + (m.clicks || 0), 0);
     const avgROAS = totalSpend > 0 ? totalRevenue / totalSpend : 0;
+
+    // Calculate insights (after summary stats are calculated)
+    const avgCPC = totalClicks > 0 ? totalSpend / totalClicks : 0;
+    const conversionRate = totalClicks > 0 ? (totalConversions / totalClicks) * 100 : 0;
+    const costPerConversion = totalConversions > 0 ? totalSpend / totalConversions : 0;
 
     // Calculate platform-specific stats
     const platformStats: Record<string, any> = {};

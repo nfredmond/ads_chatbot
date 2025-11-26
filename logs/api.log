@@ -391,3 +391,33 @@
 {"level":"info","message":"Fetched 60 campaign records from client 3895787783","timestamp":"2025-11-25 20:33:35:3335"}
 {"clientAccounts":12,"level":"http","message":"API Success","operation":"fetchCampaigns","platform":"google_ads","resultCount":790,"timestamp":"2025-11-25 20:33:35:3335"}
 {"campaignsCount":29,"duration":9963,"level":"info","message":"Data Sync","metricsCount":0,"platform":"google_ads","status":"completed","timestamp":"2025-11-25 20:33:36:3336","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"level":"info","message":"Data Sync","platform":"google_ads","status":"started","timestamp":"2025-11-25 23:31:43:3143","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"customerId":"7968967431","level":"info","loginCustomerId":"7968967431","message":"Fetching Google Ads campaigns","timestamp":"2025-11-25 23:31:43:3143"}
+{"level":"info","message":"Token Refresh","platform":"google_ads","success":true,"timestamp":"2025-11-25 23:31:43:3143"}
+{"level":"info","message":"Skipping manager account 7968967431","timestamp":"2025-11-25 23:31:44:3144"}
+{"level":"info","message":"Detected manager account, listing client accounts...","timestamp":"2025-11-25 23:31:44:3144"}
+{"level":"info","message":"Found client account: Blue Barn (4975275893)","timestamp":"2025-11-25 23:31:44:3144"}
+{"level":"info","message":"Found client account: Bluegrass climbing (5284220237)","timestamp":"2025-11-25 23:31:44:3144"}
+{"level":"info","message":"Found client account: Borderland Bakery (6456829293)","timestamp":"2025-11-25 23:31:44:3144"}
+{"level":"info","message":"Found client account: G&W Machinery (6243753533)","timestamp":"2025-11-25 23:31:44:3144"}
+{"level":"info","message":"Found client account: Longitude122 (3304611156)","timestamp":"2025-11-25 23:31:44:3144"}
+{"level":"info","message":"Found client account: Madison Event Center (8213656625)","timestamp":"2025-11-25 23:31:44:3144"}
+{"level":"info","message":"Found client account: Onpointe (3420147596)","timestamp":"2025-11-25 23:31:44:3144"}
+{"level":"info","message":"Found client account: Openfield (3989227248)","timestamp":"2025-11-25 23:31:44:3144"}
+{"level":"info","message":"Found client account: Romi Machine Tools (8078354805)","timestamp":"2025-11-25 23:31:44:3144"}
+{"level":"info","message":"Found client account: Setco - US (9523233990)","timestamp":"2025-11-25 23:31:44:3144"}
+{"level":"info","message":"Found client account: Vesco (1209059845)","timestamp":"2025-11-25 23:31:44:3144"}
+{"level":"info","message":"Found client account: ledgeinc (3895787783)","timestamp":"2025-11-25 23:31:44:3144"}
+{"count":12,"level":"info","message":"Found client accounts under manager","timestamp":"2025-11-25 23:31:44:3144"}
+{"level":"info","message":"Found 12 client accounts, fetching campaigns...","timestamp":"2025-11-25 23:31:44:3144"}
+{"level":"info","message":"Fetched 64 campaign records from client 4975275893","timestamp":"2025-11-25 23:31:45:3145"}
+{"level":"info","message":"Fetched 61 campaign records from client 5284220237","timestamp":"2025-11-25 23:31:46:3146"}
+{"level":"info","message":"Fetched 30 campaign records from client 6243753533","timestamp":"2025-11-25 23:31:48:3148"}
+{"level":"info","message":"Fetched 118 campaign records from client 8213656625","timestamp":"2025-11-25 23:31:49:3149"}
+{"level":"info","message":"Fetched 130 campaign records from client 3989227248","timestamp":"2025-11-25 23:31:50:3150"}
+{"level":"info","message":"Fetched 120 campaign records from client 8078354805","timestamp":"2025-11-25 23:31:51:3151"}
+{"level":"info","message":"Fetched 120 campaign records from client 9523233990","timestamp":"2025-11-25 23:31:52:3152"}
+{"level":"info","message":"Fetched 87 campaign records from client 1209059845","timestamp":"2025-11-25 23:31:53:3153"}
+{"level":"info","message":"Fetched 60 campaign records from client 3895787783","timestamp":"2025-11-25 23:31:54:3154"}
+{"clientAccounts":12,"level":"http","message":"API Success","operation":"fetchCampaigns","platform":"google_ads","resultCount":790,"timestamp":"2025-11-25 23:31:54:3154"}
+{"campaignsCount":29,"duration":10943,"level":"info","message":"Data Sync","metricsCount":0,"platform":"google_ads","status":"completed","timestamp":"2025-11-25 23:31:54:3154","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
