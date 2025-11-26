@@ -1,8 +1,0 @@
-[00:00:01.142] Server  WARN     ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
-[00:00:01.291] Server  LOG      ✓ Ready in 959ms
-[00:00:01.384] Server  LOG     🚀 Initializing application services...
-[00:00:01.384] Server  LOG     ✅ Application services initialized
-[00:00:03.478] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:00:32.892] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:00:40.839] Server  LOG     Chat API: User 3ecce315-e60e-4427-bff5-4376a4965708, Tenant e4147b7e-0e15-44a6-8abc-2d909074edf7, Accounts: 1, Campaigns: 29, Metrics: 766, Customers: 9
-[00:00:40.844] Server  LOG     Chat request: UI model="anthropic/claude-sonnet-4-5" -> Gateway model="anthropic/claude-sonnet-4"
