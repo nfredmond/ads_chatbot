@@ -1,0 +1,18 @@
+[00:00:01.159] Server  WARN     ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+[00:00:01.308] Server  LOG      ✓ Ready in 977ms
+[00:00:29.491] Server  LOG     🚀 Initializing application services...
+[00:00:29.491] Server  LOG     ✅ Application services initialized
+[00:00:33.504] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:45.170] Server  LOG     Data API: Found 1 ad accounts, 29 campaigns, 766 metrics for tenant e4147b7e-0e15-44a6-8abc-2d909074edf7
+[00:00:46.118] Server  LOG     Data API: Found 1 ad accounts, 29 campaigns, 766 metrics for tenant e4147b7e-0e15-44a6-8abc-2d909074edf7
+[00:01:13.863] Browser WARN    Of the table content, 17 units width could not fit page
+[00:02:10.015] Server  LOG      ✓ Compiled in 17ms
+[00:12:07.697] Server  LOG     Data API: Found 1 ad accounts, 29 campaigns, 766 metrics for tenant e4147b7e-0e15-44a6-8abc-2d909074edf7
+[00:12:08.506] Server  LOG     Data API: Found 1 ad accounts, 29 campaigns, 766 metrics for tenant e4147b7e-0e15-44a6-8abc-2d909074edf7
+[00:12:09.302] Server  LOG     Data API: Found 1 ad accounts, 29 campaigns, 766 metrics for tenant e4147b7e-0e15-44a6-8abc-2d909074edf7
+[02:41:29.540] Browser ERROR   {"__isAuthError":true,"code":"refresh_token_not_found","name":"AuthApiError","status":400}
+[02:50:05.414] Server  LOG      ✓ Compiled in 232ms
+[02:50:40.835] Server  LOG      ✓ Compiled in 83ms
+[02:50:56.441] Server  LOG      ✓ Compiled in 58ms
+[02:51:16.375] Server  LOG      ✓ Compiled in 51ms
+[02:51:59.395] Server  LOG      ✓ Compiled in 55ms

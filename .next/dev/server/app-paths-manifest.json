@@ -1,0 +1,7 @@
+{
+  "/api/data/client/route": "app/api/data/client/route.js",
+  "/api/data/route": "app/api/data/route.js",
+  "/dashboard/clients/[clientId]/page": "app/dashboard/clients/[clientId]/page.js",
+  "/dashboard/metrics/[metric]/page": "app/dashboard/metrics/[metric]/page.js",
+  "/dashboard/page": "app/dashboard/page.js"
+}

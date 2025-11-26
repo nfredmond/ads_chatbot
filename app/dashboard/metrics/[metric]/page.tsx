@@ -23,8 +23,67 @@ import {
   BarChart3,
   Eye,
   FileDown,
-  FileSpreadsheet
+  FileSpreadsheet,
+  HelpCircle
 } from 'lucide-react';
+
+// Tooltip definitions for marketing metrics
+const METRIC_TOOLTIPS: Record<string, string> = {
+  'Total Spend': 'The total amount of money spent on advertising across all campaigns and platforms.',
+  'Revenue': 'Total revenue generated from ad campaigns. This is the value of conversions attributed to your ads.',
+  'ROAS': 'Return on Ad Spend - how much revenue you earn for every dollar spent on ads. A 3x ROAS means $3 earned for every $1 spent.',
+  'Conversions': 'The number of desired actions completed (purchases, sign-ups, leads, etc.) attributed to your ads.',
+  'CTR': 'Click-Through Rate - the percentage of people who clicked your ad after seeing it. Higher is generally better.',
+  'Avg CPC': 'Average Cost Per Click - the average amount you pay each time someone clicks on your ad.',
+  'CPC': 'Cost Per Click - the amount paid for each click on your advertisement.',
+  'Impressions': 'The number of times your ads were displayed to users, regardless of whether they clicked.',
+  'Total Clicks': 'The total number of clicks your ads received across all campaigns.',
+  'Conv. Rate': 'Conversion Rate - the percentage of clicks that resulted in a conversion. Higher rates indicate more effective landing pages.',
+  'Spend': 'The amount of money spent on advertising for this client or campaign.',
+  'Client': 'The business or account receiving advertising services.',
+};
+
+// Tooltip Component
+function InfoTooltip({ text }: { text: string }) {
+  const [isVisible, setIsVisible] = useState(false);
+  
+  return (
+    <div className="relative inline-flex items-center">
+      <button
+        type="button"
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+        onFocus={() => setIsVisible(true)}
+        onBlur={() => setIsVisible(false)}
+        className="ml-1 text-gray-500 hover:text-gray-300 transition-colors focus:outline-none"
+        aria-label="More information"
+      >
+        <HelpCircle className="w-3.5 h-3.5" />
+      </button>
+      {isVisible && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-64 p-2 text-xs text-gray-200 bg-gray-900 border border-white/20 rounded-lg shadow-xl pointer-events-none">
+          {text}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1">
+            <div className="border-4 border-transparent border-t-gray-900"></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Table Header with Tooltip
+function TableHeader({ label, align = 'right', className = '' }: { label: string; align?: 'left' | 'right'; className?: string }) {
+  const tooltip = METRIC_TOOLTIPS[label];
+  return (
+    <th className={`pb-3 ${align === 'left' ? 'pr-4' : 'px-4'} text-${align} ${className}`}>
+      <span className="inline-flex items-center">
+        {label}
+        {tooltip && <InfoTooltip text={tooltip} />}
+      </span>
+    </th>
+  );
+}
 import { ExportDropdown } from '@/components/ExportButtons';
 import {
   generateMetricPDF,
@@ -818,14 +877,26 @@ export default function MetricDetailPage() {
           <table className="w-full">
             <thead>
               <tr className="text-left text-xs text-gray-400 border-b border-white/10">
-                <th className="pb-3 pr-4">Rank</th>
-                <th className="pb-3 pr-4">Client</th>
-                <th className="pb-3 px-4 text-right">{config.title.replace(' Analysis', '')}</th>
-                <th className="pb-3 px-4 text-right">Spend</th>
-                <th className="pb-3 px-4 text-right">Revenue</th>
-                <th className="pb-3 px-4 text-right">ROAS</th>
-                <th className="pb-3 px-4 text-right">Conversions</th>
-                <th className="pb-3 pl-4 text-right">CTR</th>
+                <th className="pb-3 pr-4">
+                  <span className="inline-flex items-center">
+                    Rank
+                    <InfoTooltip text="Position based on the selected metric - lower rank is better." />
+                  </span>
+                </th>
+                <TableHeader label="Client" align="left" />
+                <th className="pb-3 px-4 text-right">
+                  <span className="inline-flex items-center justify-end">
+                    {config.title.replace(' Analysis', '')}
+                    {METRIC_TOOLTIPS[config.title.replace(' Analysis', '')] && 
+                      <InfoTooltip text={METRIC_TOOLTIPS[config.title.replace(' Analysis', '')] || ''} />
+                    }
+                  </span>
+                </th>
+                <TableHeader label="Spend" />
+                <TableHeader label="Revenue" />
+                <TableHeader label="ROAS" />
+                <TableHeader label="Conversions" />
+                <TableHeader label="CTR" className="pl-4" />
               </tr>
             </thead>
             <tbody>

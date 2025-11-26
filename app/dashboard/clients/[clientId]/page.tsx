@@ -26,8 +26,67 @@ import {
   ChevronLeft,
   ChevronRight,
   FileDown,
-  FileSpreadsheet
+  FileSpreadsheet,
+  HelpCircle
 } from 'lucide-react';
+
+// Tooltip definitions for marketing metrics
+const METRIC_TOOLTIPS: Record<string, string> = {
+  'Total Spend': 'The total amount of money spent on advertising across all campaigns and platforms.',
+  'Revenue': 'Total revenue generated from ad campaigns. This is the value of conversions attributed to your ads.',
+  'ROAS': 'Return on Ad Spend - how much revenue you earn for every dollar spent on ads. A 3x ROAS means $3 earned for every $1 spent.',
+  'Conversions': 'The number of desired actions completed (purchases, sign-ups, leads, etc.) attributed to your ads.',
+  'CTR': 'Click-Through Rate - the percentage of people who clicked your ad after seeing it. Higher is generally better.',
+  'Avg CPC': 'Average Cost Per Click - the average amount you pay each time someone clicks on your ad.',
+  'CPC': 'Cost Per Click - the amount paid for each click on your advertisement.',
+  'Impressions': 'The number of times your ads were displayed to users, regardless of whether they clicked.',
+  'Total Clicks': 'The total number of clicks your ads received across all campaigns.',
+  'Conv. Rate': 'Conversion Rate - the percentage of clicks that resulted in a conversion. Higher rates indicate more effective landing pages.',
+  'Spend': 'The amount of money spent on advertising for this client or campaign.',
+  'Campaign': 'An individual advertising campaign with its own budget, targeting, and ads.',
+};
+
+// Tooltip Component
+function InfoTooltip({ text }: { text: string }) {
+  const [isVisible, setIsVisible] = useState(false);
+  
+  return (
+    <div className="relative inline-flex items-center">
+      <button
+        type="button"
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+        onFocus={() => setIsVisible(true)}
+        onBlur={() => setIsVisible(false)}
+        className="ml-1 text-gray-500 hover:text-gray-300 transition-colors focus:outline-none"
+        aria-label="More information"
+      >
+        <HelpCircle className="w-3.5 h-3.5" />
+      </button>
+      {isVisible && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-64 p-2 text-xs text-gray-200 bg-gray-900 border border-white/20 rounded-lg shadow-xl pointer-events-none">
+          {text}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1">
+            <div className="border-4 border-transparent border-t-gray-900"></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Table Header with Tooltip
+function TableHeader({ label, align = 'right', className = '' }: { label: string; align?: 'left' | 'right'; className?: string }) {
+  const tooltip = METRIC_TOOLTIPS[label];
+  return (
+    <th className={`pb-3 ${align === 'left' ? 'pr-4' : 'px-4'} text-${align} ${className}`}>
+      <span className="inline-flex items-center">
+        {label}
+        {tooltip && <InfoTooltip text={tooltip} />}
+      </span>
+    </th>
+  );
+}
 import { ExportDropdown } from '@/components/ExportButtons';
 import {
   generateClientPDF,
@@ -593,7 +652,10 @@ export default function ClientDetailPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
         <Link href="/dashboard/metrics/spend" className="p-4 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/5 border border-blue-500/20 hover:border-blue-400/40 transition-colors">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-gray-400">Total Spend</span>
+            <span className="text-xs text-gray-400 inline-flex items-center">
+              Total Spend
+              <InfoTooltip text={METRIC_TOOLTIPS['Total Spend']} />
+            </span>
             <DollarSign className="w-4 h-4 text-blue-400" />
           </div>
           <p className="text-xl font-bold">{formatCurrency(metrics.totalSpend)}</p>
@@ -601,7 +663,10 @@ export default function ClientDetailPage() {
         
         <Link href="/dashboard/metrics/revenue" className="p-4 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/5 border border-emerald-500/20 hover:border-emerald-400/40 transition-colors">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-gray-400">Revenue</span>
+            <span className="text-xs text-gray-400 inline-flex items-center">
+              Revenue
+              <InfoTooltip text={METRIC_TOOLTIPS['Revenue']} />
+            </span>
             <TrendingUp className="w-4 h-4 text-emerald-400" />
           </div>
           <p className="text-xl font-bold">{formatCurrency(metrics.totalRevenue)}</p>
@@ -609,7 +674,10 @@ export default function ClientDetailPage() {
         
         <Link href="/dashboard/metrics/roas" className="p-4 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/5 border border-purple-500/20 hover:border-purple-400/40 transition-colors">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-gray-400">ROAS</span>
+            <span className="text-xs text-gray-400 inline-flex items-center">
+              ROAS
+              <InfoTooltip text={METRIC_TOOLTIPS['ROAS']} />
+            </span>
             <Target className="w-4 h-4 text-purple-400" />
           </div>
           <p className="text-xl font-bold">{metrics.averageROAS.toFixed(1)}x</p>
@@ -618,7 +686,10 @@ export default function ClientDetailPage() {
         
         <Link href="/dashboard/metrics/conversions" className="p-4 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/5 border border-amber-500/20 hover:border-amber-400/40 transition-colors">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-gray-400">Conversions</span>
+            <span className="text-xs text-gray-400 inline-flex items-center">
+              Conversions
+              <InfoTooltip text={METRIC_TOOLTIPS['Conversions']} />
+            </span>
             <MousePointerClick className="w-4 h-4 text-amber-400" />
           </div>
           <p className="text-xl font-bold">{formatNumber(metrics.totalConversions)}</p>
@@ -626,7 +697,10 @@ export default function ClientDetailPage() {
         
         <Link href="/dashboard/metrics/ctr" className="p-4 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/5 border border-cyan-500/20 hover:border-cyan-400/40 transition-colors">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-gray-400">CTR</span>
+            <span className="text-xs text-gray-400 inline-flex items-center">
+              CTR
+              <InfoTooltip text={METRIC_TOOLTIPS['CTR']} />
+            </span>
             <Percent className="w-4 h-4 text-cyan-400" />
           </div>
           <p className="text-xl font-bold">{formatPercent(metrics.ctr)}</p>
@@ -635,7 +709,10 @@ export default function ClientDetailPage() {
         
         <Link href="/dashboard/metrics/cpc" className="p-4 rounded-xl bg-gradient-to-br from-pink-500/20 to-pink-600/5 border border-pink-500/20 hover:border-pink-400/40 transition-colors">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-gray-400">Avg CPC</span>
+            <span className="text-xs text-gray-400 inline-flex items-center">
+              Avg CPC
+              <InfoTooltip text={METRIC_TOOLTIPS['Avg CPC']} />
+            </span>
             <DollarSign className="w-4 h-4 text-pink-400" />
           </div>
           <p className="text-xl font-bold">{formatCurrency(metrics.cpc)}</p>
@@ -646,28 +723,40 @@ export default function ClientDetailPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="p-4 rounded-xl bg-white/5 border border-white/10">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-gray-400">Impressions</span>
+            <span className="text-xs text-gray-400 inline-flex items-center">
+              Impressions
+              <InfoTooltip text={METRIC_TOOLTIPS['Impressions']} />
+            </span>
             <Eye className="w-4 h-4 text-gray-500" />
           </div>
           <p className="text-xl font-bold">{formatNumber(metrics.totalImpressions)}</p>
         </div>
         <div className="p-4 rounded-xl bg-white/5 border border-white/10">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-gray-400">Total Clicks</span>
+            <span className="text-xs text-gray-400 inline-flex items-center">
+              Total Clicks
+              <InfoTooltip text={METRIC_TOOLTIPS['Total Clicks']} />
+            </span>
             <MousePointerClick className="w-4 h-4 text-gray-500" />
           </div>
           <p className="text-xl font-bold">{formatNumber(metrics.totalClicks)}</p>
         </div>
         <div className="p-4 rounded-xl bg-white/5 border border-white/10">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-gray-400">Conv. Rate</span>
+            <span className="text-xs text-gray-400 inline-flex items-center">
+              Conv. Rate
+              <InfoTooltip text={METRIC_TOOLTIPS['Conv. Rate']} />
+            </span>
             <Percent className="w-4 h-4 text-gray-500" />
           </div>
           <p className="text-xl font-bold">{formatPercent(metrics.convRate)}</p>
         </div>
         <div className="p-4 rounded-xl bg-white/5 border border-white/10">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-gray-400">Active Campaigns</span>
+            <span className="text-xs text-gray-400 inline-flex items-center">
+              Active Campaigns
+              <InfoTooltip text="The number of campaigns currently running for this client." />
+            </span>
             <BarChart3 className="w-4 h-4 text-gray-500" />
           </div>
           <p className="text-xl font-bold">{activeCampaigns}</p>
@@ -745,14 +834,19 @@ export default function ClientDetailPage() {
           <table className="w-full">
             <thead>
               <tr className="text-left text-xs text-gray-400 border-b border-white/10">
-                <th className="pb-3 pr-4">Campaign</th>
-                <th className="pb-3 px-4 text-center">Status</th>
-                <th className="pb-3 px-4 text-right">Spend</th>
-                <th className="pb-3 px-4 text-right">Revenue</th>
-                <th className="pb-3 px-4 text-right">ROAS</th>
-                <th className="pb-3 px-4 text-right">Conversions</th>
-                <th className="pb-3 px-4 text-right">CTR</th>
-                <th className="pb-3 pl-4 text-right">CPC</th>
+                <TableHeader label="Campaign" align="left" />
+                <th className="pb-3 px-4 text-center">
+                  <span className="inline-flex items-center">
+                    Status
+                    <InfoTooltip text="Whether the campaign is currently active, paused, or completed." />
+                  </span>
+                </th>
+                <TableHeader label="Spend" />
+                <TableHeader label="Revenue" />
+                <TableHeader label="ROAS" />
+                <TableHeader label="Conversions" />
+                <TableHeader label="CTR" />
+                <TableHeader label="CPC" className="pl-4" />
               </tr>
             </thead>
             <tbody>
