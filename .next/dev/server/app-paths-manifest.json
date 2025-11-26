@@ -1,0 +1,12 @@
+{
+  "/api/chat/route": "app/api/chat/route.js",
+  "/api/data/client/route": "app/api/data/client/route.js",
+  "/api/data/route": "app/api/data/route.js",
+  "/api/sync-data/route": "app/api/sync-data/route.js",
+  "/dashboard/chat/page": "app/dashboard/chat/page.js",
+  "/dashboard/clients/[clientId]/page": "app/dashboard/clients/[clientId]/page.js",
+  "/dashboard/metrics/[metric]/page": "app/dashboard/metrics/[metric]/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/dashboard/settings/page": "app/dashboard/settings/page.js",
+  "/login/page": "app/login/page.js"
+}

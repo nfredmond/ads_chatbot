@@ -1,0 +1,22 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api/chat/route": "/api/chat",
+  "/api/data/client/route": "/api/data/client",
+  "/api/data/route": "/api/data",
+  "/api/sync-data/route": "/api/sync-data",
+  "/auth/callback/route": "/auth/callback",
+  "/auth/google/route": "/auth/google",
+  "/auth/linkedin/route": "/auth/linkedin",
+  "/auth/meta/route": "/auth/meta",
+  "/dashboard/chat/page": "/dashboard/chat",
+  "/dashboard/clients/[clientId]/page": "/dashboard/clients/[clientId]",
+  "/dashboard/metrics/[metric]/page": "/dashboard/metrics/[metric]",
+  "/dashboard/page": "/dashboard",
+  "/dashboard/settings/page": "/dashboard/settings",
+  "/login/page": "/login",
+  "/page": "/",
+  "/privacy-policy/page": "/privacy-policy",
+  "/signup/page": "/signup",
+  "/terms-of-service/page": "/terms-of-service"
+}

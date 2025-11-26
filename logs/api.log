@@ -1,0 +1,393 @@
+{"event":"initiated","level":"info","message":"OAuth Event","platform":"google_ads","timestamp":"2025-11-25 19:33:40:3340","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"event":"initiated","level":"info","message":"OAuth Event","platform":"google_ads","timestamp":"2025-11-25 19:37:42:3742","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"event":"initiated","level":"info","message":"OAuth Event","platform":"google_ads","timestamp":"2025-11-25 19:38:40:3840","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"event":"initiated","level":"info","message":"OAuth Event","platform":"google_ads","timestamp":"2025-11-25 19:39:20:3920","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"level":"error","message":"Google OAuth error: Token encryption failed: ENCRYPTION_KEY environment variable is not set. Generate one using: openssl rand -hex 32","stack":"Error: Token encryption failed: ENCRYPTION_KEY environment variable is not set. Generate one using: openssl rand -hex 32\n    at encryptToken (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\[root-of-the-server]__25f35b99._.js:369:15)\n    at buildEncryptedFields (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\[root-of-the-server]__25f35b99._.js:488:171)\n    at buildEncryptedTokenUpdate (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\[root-of-the-server]__25f35b99._.js:497:20)\n    at GET (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\[root-of-the-server]__25f35b99._.js:710:203)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async AppRouteRouteModule.do (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\node_modules\\next\\dist\\compiled\\next-server\\app-route-turbo.runtime.dev.js:5:37789)\n    at async AppRouteRouteModule.handle (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\node_modules\\next\\dist\\compiled\\next-server\\app-route-turbo.runtime.dev.js:5:45045)\n    at async responseGenerator (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\node_modules_next_fecae4d9._.js:15485:38)\n    at async AppRouteRouteModule.handleResponse (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\node_modules\\next\\dist\\compiled\\next-server\\app-route-turbo.runtime.dev.js:1:187851)\n    at async handleResponse (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\node_modules_next_fecae4d9._.js:15547:32)\n    at async handler (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\node_modules_next_fecae4d9._.js:15600:13)\n    at async DevServer.renderToResponseWithComponentsImpl (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\node_modules\\next\\dist\\server\\base-server.js:1413:9)\n    at async DevServer.renderPageComponent (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\node_modules\\next\\dist\\server\\base-server.js:1465:24)\n    at async DevServer.renderToResponseImpl (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\node_modules\\next\\dist\\server\\base-server.js:1515:32)\n    at async DevServer.pipeImpl (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\node_modules\\next\\dist\\server\\base-server.js:1021:25)\n    at async NextNodeServer.handleCatchallRenderRequest (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\node_modules\\next\\dist\\server\\next-server.js:394:17)\n    at async DevServer.handleRequestImpl (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\node_modules\\next\\dist\\server\\base-server.js:912:17)\n    at async C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\node_modules\\next\\dist\\server\\dev\\next-dev-server.js:382:20\n    at async Span.traceAsyncFn (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\node_modules\\next\\dist\\trace\\trace.js:157:20)\n    at async DevServer.handleRequest (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\node_modules\\next\\dist\\server\\dev\\next-dev-server.js:378:24)\n    at async invokeRender (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\node_modules\\next\\dist\\server\\lib\\router-server.js:240:21)\n    at async handleRequest (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\node_modules\\next\\dist\\server\\lib\\router-server.js:436:24)\n    at async requestHandlerImpl (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\node_modules\\next\\dist\\server\\lib\\router-server.js:484:13)\n    at async Server.requestListener (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\node_modules\\next\\dist\\server\\lib\\start-server.js:226:13)","timestamp":"2025-11-25 19:39:39:3939"}
+{"error":"Token encryption failed: ENCRYPTION_KEY environment variable is not set. Generate one using: openssl rand -hex 32","event":"failure","level":"error","message":"OAuth Event","platform":"google_ads","timestamp":"2025-11-25 19:39:39:3939","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"event":"initiated","level":"info","message":"OAuth Event","platform":"google_ads","timestamp":"2025-11-25 19:42:45:4245","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"event":"initiated","level":"info","message":"OAuth Event","platform":"google_ads","timestamp":"2025-11-25 19:43:29:4329","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"event":"success","level":"info","message":"OAuth Event","platform":"google_ads","timestamp":"2025-11-25 19:43:42:4342","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"level":"info","message":"Data Sync","platform":"google_ads","status":"started","timestamp":"2025-11-25 19:44:02:442","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"customerId":"796-896-7431","level":"info","message":"Fetching Google Ads campaigns","timestamp":"2025-11-25 19:44:02:442"}
+{"level":"info","message":"Token Refresh","platform":"google_ads","success":true,"timestamp":"2025-11-25 19:44:03:443"}
+{"error":"Request contains an invalid argument.","errorCode":"400","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Request contains an invalid argument.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:374:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:44:03:443"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-epop4ghn5eh","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":0,"timestamp":"2025-11-25 19:44:03:443"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:44:03:443"}
+{"jobId":"<no-id>-epop4ghn5eh","level":"info","message":"Retrying google_ads request","retryCount":0,"timestamp":"2025-11-25 19:44:03:443"}
+{"error":"Request contains an invalid argument.","errorCode":"400","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Request contains an invalid argument.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:374:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:44:04:444"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-epop4ghn5eh","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":1,"timestamp":"2025-11-25 19:44:04:444"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:44:04:444"}
+{"jobId":"<no-id>-epop4ghn5eh","level":"info","message":"Retrying google_ads request","retryCount":1,"timestamp":"2025-11-25 19:44:04:444"}
+{"error":"Request contains an invalid argument.","errorCode":"400","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Request contains an invalid argument.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:374:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:44:05:445"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-epop4ghn5eh","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":2,"timestamp":"2025-11-25 19:44:05:445"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:44:05:445"}
+{"jobId":"<no-id>-epop4ghn5eh","level":"info","message":"Retrying google_ads request","retryCount":2,"timestamp":"2025-11-25 19:44:05:445"}
+{"error":"Request contains an invalid argument.","errorCode":"400","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Request contains an invalid argument.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:374:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:44:06:446"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-epop4ghn5eh","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":3,"timestamp":"2025-11-25 19:44:06:446"}
+{"error":{"errorCode":"400","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:44:06.906Z"},"level":"error","message":"Rate limited execution failed for google_ads","timestamp":"2025-11-25 19:44:06:446"}
+{"error":{"errorCode":"400","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:44:06.906Z"},"level":"error","message":"Error syncing google_ads:","timestamp":"2025-11-25 19:44:06:446","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"duration":4166,"error":{"errorCode":"400","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:44:06.906Z"},"level":"error","message":"Data Sync","platform":"google_ads","status":"failed","timestamp":"2025-11-25 19:44:06:446","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"level":"info","message":"Data Sync","platform":"google_ads","status":"started","timestamp":"2025-11-25 19:44:17:4417","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"customerId":"796-896-7431","level":"info","message":"Fetching Google Ads campaigns","timestamp":"2025-11-25 19:44:17:4417"}
+{"level":"info","message":"Token Refresh","platform":"google_ads","success":true,"timestamp":"2025-11-25 19:44:17:4417"}
+{"error":"Request contains an invalid argument.","errorCode":"400","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Request contains an invalid argument.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:374:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:44:17:4417"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-4zvet0uxzfh","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":0,"timestamp":"2025-11-25 19:44:17:4417"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:44:17:4417"}
+{"jobId":"<no-id>-4zvet0uxzfh","level":"info","message":"Retrying google_ads request","retryCount":0,"timestamp":"2025-11-25 19:44:17:4417"}
+{"error":"Request contains an invalid argument.","errorCode":"400","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Request contains an invalid argument.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:374:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:44:18:4418"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-4zvet0uxzfh","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":1,"timestamp":"2025-11-25 19:44:18:4418"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:44:18:4418"}
+{"jobId":"<no-id>-4zvet0uxzfh","level":"info","message":"Retrying google_ads request","retryCount":1,"timestamp":"2025-11-25 19:44:18:4418"}
+{"error":"Request contains an invalid argument.","errorCode":"400","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Request contains an invalid argument.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:374:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:44:20:4420"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-4zvet0uxzfh","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":2,"timestamp":"2025-11-25 19:44:20:4420"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:44:20:4420"}
+{"jobId":"<no-id>-4zvet0uxzfh","level":"info","message":"Retrying google_ads request","retryCount":2,"timestamp":"2025-11-25 19:44:20:4420"}
+{"error":"Request contains an invalid argument.","errorCode":"400","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Request contains an invalid argument.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:374:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:44:21:4421"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-4zvet0uxzfh","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":3,"timestamp":"2025-11-25 19:44:21:4421"}
+{"error":{"errorCode":"400","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:44:21.342Z"},"level":"error","message":"Rate limited execution failed for google_ads","timestamp":"2025-11-25 19:44:21:4421"}
+{"error":{"errorCode":"400","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:44:21.342Z"},"level":"error","message":"Error syncing google_ads:","timestamp":"2025-11-25 19:44:21:4421","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"duration":4055,"error":{"errorCode":"400","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:44:21.342Z"},"level":"error","message":"Data Sync","platform":"google_ads","status":"failed","timestamp":"2025-11-25 19:44:21:4421","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"level":"info","message":"Data Sync","platform":"google_ads","status":"started","timestamp":"2025-11-25 19:44:39:4439","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"customerId":"796-896-7431","level":"info","message":"Fetching Google Ads campaigns","timestamp":"2025-11-25 19:44:39:4439"}
+{"level":"info","message":"Token Refresh","platform":"google_ads","success":true,"timestamp":"2025-11-25 19:44:39:4439"}
+{"error":"Request contains an invalid argument.","errorCode":"400","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Request contains an invalid argument.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:374:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:44:40:4440"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-gsb5n2o5ezg","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":0,"timestamp":"2025-11-25 19:44:40:4440"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:44:40:4440"}
+{"jobId":"<no-id>-gsb5n2o5ezg","level":"info","message":"Retrying google_ads request","retryCount":0,"timestamp":"2025-11-25 19:44:40:4440"}
+{"error":"Request contains an invalid argument.","errorCode":"400","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Request contains an invalid argument.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:374:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:44:41:4441"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-gsb5n2o5ezg","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":1,"timestamp":"2025-11-25 19:44:41:4441"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:44:41:4441"}
+{"jobId":"<no-id>-gsb5n2o5ezg","level":"info","message":"Retrying google_ads request","retryCount":1,"timestamp":"2025-11-25 19:44:41:4441"}
+{"error":"Request contains an invalid argument.","errorCode":"400","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Request contains an invalid argument.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:374:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:44:42:4442"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-gsb5n2o5ezg","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":2,"timestamp":"2025-11-25 19:44:42:4442"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:44:42:4442"}
+{"jobId":"<no-id>-gsb5n2o5ezg","level":"info","message":"Retrying google_ads request","retryCount":2,"timestamp":"2025-11-25 19:44:42:4442"}
+{"error":"Request contains an invalid argument.","errorCode":"400","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Request contains an invalid argument.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:374:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:44:43:4443"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-gsb5n2o5ezg","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":3,"timestamp":"2025-11-25 19:44:43:4443"}
+{"error":{"errorCode":"400","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:44:43.697Z"},"level":"error","message":"Rate limited execution failed for google_ads","timestamp":"2025-11-25 19:44:43:4443"}
+{"error":{"errorCode":"400","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:44:43.697Z"},"level":"error","message":"Error syncing google_ads:","timestamp":"2025-11-25 19:44:43:4443","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"duration":4011,"error":{"errorCode":"400","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:44:43.697Z"},"level":"error","message":"Data Sync","platform":"google_ads","status":"failed","timestamp":"2025-11-25 19:44:43:4443","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"level":"info","message":"Data Sync","platform":"google_ads","status":"started","timestamp":"2025-11-25 19:46:53:4653","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"customerId":"796-896-7431","level":"info","message":"Fetching Google Ads campaigns","timestamp":"2025-11-25 19:46:53:4653"}
+{"level":"info","message":"Token Refresh","platform":"google_ads","success":true,"timestamp":"2025-11-25 19:46:53:4653"}
+{"error":"Invalid customer ID '796-896-7431'.","errorCode":"[object Object]","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Invalid customer ID '796-896-7431'.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:383:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:46:53:4653"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-2mk41jyqz3u","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":0,"timestamp":"2025-11-25 19:46:53:4653"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:46:53:4653"}
+{"jobId":"<no-id>-2mk41jyqz3u","level":"info","message":"Retrying google_ads request","retryCount":0,"timestamp":"2025-11-25 19:46:53:4653"}
+{"error":"Invalid customer ID '796-896-7431'.","errorCode":"[object Object]","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Invalid customer ID '796-896-7431'.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:383:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:46:54:4654"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-2mk41jyqz3u","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":1,"timestamp":"2025-11-25 19:46:54:4654"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:46:54:4654"}
+{"jobId":"<no-id>-2mk41jyqz3u","level":"info","message":"Retrying google_ads request","retryCount":1,"timestamp":"2025-11-25 19:46:54:4654"}
+{"error":"Invalid customer ID '796-896-7431'.","errorCode":"[object Object]","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Invalid customer ID '796-896-7431'.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:383:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:46:55:4655"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-2mk41jyqz3u","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":2,"timestamp":"2025-11-25 19:46:55:4655"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:46:55:4655"}
+{"jobId":"<no-id>-2mk41jyqz3u","level":"info","message":"Retrying google_ads request","retryCount":2,"timestamp":"2025-11-25 19:46:55:4655"}
+{"error":"Invalid customer ID '796-896-7431'.","errorCode":"[object Object]","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Invalid customer ID '796-896-7431'.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:383:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:46:57:4657"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-2mk41jyqz3u","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":3,"timestamp":"2025-11-25 19:46:57:4657"}
+{"error":{"errorCode":"[object Object]","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:46:57.061Z"},"level":"error","message":"Rate limited execution failed for google_ads","timestamp":"2025-11-25 19:46:57:4657"}
+{"error":{"errorCode":"[object Object]","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:46:57.061Z"},"level":"error","message":"Error syncing google_ads:","timestamp":"2025-11-25 19:46:57:4657","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"duration":4057,"error":{"errorCode":"[object Object]","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:46:57.061Z"},"level":"error","message":"Data Sync","platform":"google_ads","status":"failed","timestamp":"2025-11-25 19:46:57:4657","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"level":"info","message":"Data Sync","platform":"google_ads","status":"started","timestamp":"2025-11-25 19:47:05:475","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"customerId":"796-896-7431","level":"info","message":"Fetching Google Ads campaigns","timestamp":"2025-11-25 19:47:05:475"}
+{"level":"info","message":"Token Refresh","platform":"google_ads","success":true,"timestamp":"2025-11-25 19:47:05:475"}
+{"error":"Invalid customer ID '796-896-7431'.","errorCode":"[object Object]","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Invalid customer ID '796-896-7431'.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:383:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:47:05:475"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-5cn4tovr91u","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":0,"timestamp":"2025-11-25 19:47:05:475"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:47:05:475"}
+{"jobId":"<no-id>-5cn4tovr91u","level":"info","message":"Retrying google_ads request","retryCount":0,"timestamp":"2025-11-25 19:47:05:475"}
+{"error":"Invalid customer ID '796-896-7431'.","errorCode":"[object Object]","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Invalid customer ID '796-896-7431'.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:383:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:47:07:477"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-5cn4tovr91u","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":1,"timestamp":"2025-11-25 19:47:07:477"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:47:07:477"}
+{"jobId":"<no-id>-5cn4tovr91u","level":"info","message":"Retrying google_ads request","retryCount":1,"timestamp":"2025-11-25 19:47:07:477"}
+{"error":"Invalid customer ID '796-896-7431'.","errorCode":"[object Object]","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Invalid customer ID '796-896-7431'.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:383:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:47:08:478"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-5cn4tovr91u","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":2,"timestamp":"2025-11-25 19:47:08:478"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:47:08:478"}
+{"jobId":"<no-id>-5cn4tovr91u","level":"info","message":"Retrying google_ads request","retryCount":2,"timestamp":"2025-11-25 19:47:08:478"}
+{"error":"Invalid customer ID '796-896-7431'.","errorCode":"[object Object]","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Invalid customer ID '796-896-7431'.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:383:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:47:09:479"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-5cn4tovr91u","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":3,"timestamp":"2025-11-25 19:47:09:479"}
+{"error":{"errorCode":"[object Object]","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:47:09.400Z"},"level":"error","message":"Rate limited execution failed for google_ads","timestamp":"2025-11-25 19:47:09:479"}
+{"error":{"errorCode":"[object Object]","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:47:09.400Z"},"level":"error","message":"Error syncing google_ads:","timestamp":"2025-11-25 19:47:09:479","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"duration":4008,"error":{"errorCode":"[object Object]","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:47:09.400Z"},"level":"error","message":"Data Sync","platform":"google_ads","status":"failed","timestamp":"2025-11-25 19:47:09:479","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"event":"initiated","level":"info","message":"OAuth Event","platform":"google_ads","timestamp":"2025-11-25 19:52:10:5210","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"event":"success","level":"info","message":"OAuth Event","platform":"google_ads","timestamp":"2025-11-25 19:52:48:5248","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"level":"info","message":"Data Sync","platform":"google_ads","status":"started","timestamp":"2025-11-25 19:52:57:5257","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"customerId":"796-896-7431","level":"info","message":"Fetching Google Ads campaigns","timestamp":"2025-11-25 19:52:57:5257"}
+{"level":"info","message":"Token Refresh","platform":"google_ads","success":true,"timestamp":"2025-11-25 19:52:57:5257"}
+{"error":"Invalid customer ID '796-896-7431'.","errorCode":"[object Object]","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Invalid customer ID '796-896-7431'.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:383:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:52:57:5257"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-933q4bebpeo","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":0,"timestamp":"2025-11-25 19:52:57:5257"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:52:57:5257"}
+{"jobId":"<no-id>-933q4bebpeo","level":"info","message":"Retrying google_ads request","retryCount":0,"timestamp":"2025-11-25 19:52:57:5257"}
+{"error":"Invalid customer ID '796-896-7431'.","errorCode":"[object Object]","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Invalid customer ID '796-896-7431'.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:383:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:52:58:5258"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-933q4bebpeo","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":1,"timestamp":"2025-11-25 19:52:58:5258"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:52:58:5258"}
+{"jobId":"<no-id>-933q4bebpeo","level":"info","message":"Retrying google_ads request","retryCount":1,"timestamp":"2025-11-25 19:52:58:5258"}
+{"error":"Invalid customer ID '796-896-7431'.","errorCode":"[object Object]","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Invalid customer ID '796-896-7431'.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:383:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:53:00:530"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-933q4bebpeo","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":2,"timestamp":"2025-11-25 19:53:00:530"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:53:00:530"}
+{"jobId":"<no-id>-933q4bebpeo","level":"info","message":"Retrying google_ads request","retryCount":2,"timestamp":"2025-11-25 19:53:00:530"}
+{"error":"Invalid customer ID '796-896-7431'.","errorCode":"[object Object]","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Invalid customer ID '796-896-7431'.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:383:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:53:01:531"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-933q4bebpeo","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":3,"timestamp":"2025-11-25 19:53:01:531"}
+{"error":{"errorCode":"[object Object]","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:53:01.274Z"},"level":"error","message":"Rate limited execution failed for google_ads","timestamp":"2025-11-25 19:53:01:531"}
+{"error":{"errorCode":"[object Object]","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:53:01.274Z"},"level":"error","message":"Error syncing google_ads:","timestamp":"2025-11-25 19:53:01:531","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"duration":4074,"error":{"errorCode":"[object Object]","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:53:01.274Z"},"level":"error","message":"Data Sync","platform":"google_ads","status":"failed","timestamp":"2025-11-25 19:53:01:531","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"level":"info","message":"Data Sync","platform":"google_ads","status":"started","timestamp":"2025-11-25 19:54:27:5427","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"customerId":"7968967431","level":"info","message":"Fetching Google Ads campaigns","timestamp":"2025-11-25 19:54:27:5427"}
+{"level":"info","message":"Token Refresh","platform":"google_ads","success":true,"timestamp":"2025-11-25 19:54:27:5427"}
+{"error":"Setting the page size is not supported. Search Responses will have fixed page size of '10000' rows.","errorCode":"[object Object]","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Setting the page size is not supported. Search Responses will have fixed page size of '10000' rows.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:385:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:54:28:5428"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-kvvu2laehd","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":0,"timestamp":"2025-11-25 19:54:28:5428"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:54:28:5428"}
+{"jobId":"<no-id>-kvvu2laehd","level":"info","message":"Retrying google_ads request","retryCount":0,"timestamp":"2025-11-25 19:54:28:5428"}
+{"error":"Setting the page size is not supported. Search Responses will have fixed page size of '10000' rows.","errorCode":"[object Object]","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Setting the page size is not supported. Search Responses will have fixed page size of '10000' rows.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:385:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:54:30:5430"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-kvvu2laehd","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":1,"timestamp":"2025-11-25 19:54:30:5430"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:54:30:5430"}
+{"jobId":"<no-id>-kvvu2laehd","level":"info","message":"Retrying google_ads request","retryCount":1,"timestamp":"2025-11-25 19:54:30:5430"}
+{"error":"Setting the page size is not supported. Search Responses will have fixed page size of '10000' rows.","errorCode":"[object Object]","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Setting the page size is not supported. Search Responses will have fixed page size of '10000' rows.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:385:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:54:31:5431"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-kvvu2laehd","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":2,"timestamp":"2025-11-25 19:54:31:5431"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:54:31:5431"}
+{"jobId":"<no-id>-kvvu2laehd","level":"info","message":"Retrying google_ads request","retryCount":2,"timestamp":"2025-11-25 19:54:31:5431"}
+{"error":"Setting the page size is not supported. Search Responses will have fixed page size of '10000' rows.","errorCode":"[object Object]","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Setting the page size is not supported. Search Responses will have fixed page size of '10000' rows.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:385:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:54:33:5433"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-kvvu2laehd","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":3,"timestamp":"2025-11-25 19:54:33:5433"}
+{"error":{"errorCode":"[object Object]","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:54:33.086Z"},"level":"error","message":"Rate limited execution failed for google_ads","timestamp":"2025-11-25 19:54:33:5433"}
+{"error":{"errorCode":"[object Object]","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:54:33.086Z"},"level":"error","message":"Error syncing google_ads:","timestamp":"2025-11-25 19:54:33:5433","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"duration":5525,"error":{"errorCode":"[object Object]","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:54:33.086Z"},"level":"error","message":"Data Sync","platform":"google_ads","status":"failed","timestamp":"2025-11-25 19:54:33:5433","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"level":"info","message":"Data Sync","platform":"google_ads","status":"started","timestamp":"2025-11-25 19:55:21:5521","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"customerId":"7968967431","level":"info","message":"Fetching Google Ads campaigns","timestamp":"2025-11-25 19:55:21:5521"}
+{"level":"info","message":"Token Refresh","platform":"google_ads","success":true,"timestamp":"2025-11-25 19:55:21:5521"}
+{"error":"Metrics cannot be requested for a manager account. To retrieve metrics, issue separate requests against each client account under the manager account.","errorCode":"[object Object]","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Metrics cannot be requested for a manager account. To retrieve metrics, issue separate requests against each client account under the manager account.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:384:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:55:21:5521"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-bkv9rrld9cm","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":0,"timestamp":"2025-11-25 19:55:21:5521"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:55:21:5521"}
+{"jobId":"<no-id>-bkv9rrld9cm","level":"info","message":"Retrying google_ads request","retryCount":0,"timestamp":"2025-11-25 19:55:21:5521"}
+{"error":"Metrics cannot be requested for a manager account. To retrieve metrics, issue separate requests against each client account under the manager account.","errorCode":"[object Object]","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Metrics cannot be requested for a manager account. To retrieve metrics, issue separate requests against each client account under the manager account.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:384:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:55:23:5523"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-bkv9rrld9cm","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":1,"timestamp":"2025-11-25 19:55:23:5523"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:55:23:5523"}
+{"jobId":"<no-id>-bkv9rrld9cm","level":"info","message":"Retrying google_ads request","retryCount":1,"timestamp":"2025-11-25 19:55:23:5523"}
+{"error":"Metrics cannot be requested for a manager account. To retrieve metrics, issue separate requests against each client account under the manager account.","errorCode":"[object Object]","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Metrics cannot be requested for a manager account. To retrieve metrics, issue separate requests against each client account under the manager account.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:384:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:55:24:5524"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-bkv9rrld9cm","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":2,"timestamp":"2025-11-25 19:55:24:5524"}
+{"level":"info","message":"Retrying google_ads request in 1000ms","timestamp":"2025-11-25 19:55:24:5524"}
+{"jobId":"<no-id>-bkv9rrld9cm","level":"info","message":"Retrying google_ads request","retryCount":2,"timestamp":"2025-11-25 19:55:24:5524"}
+{"error":"Metrics cannot be requested for a manager account. To retrieve metrics, issue separate requests against each client account under the manager account.","errorCode":"[object Object]","level":"error","message":"Platform API Error","operation":"fetchCampaigns","platform":"google_ads","stack":"Error: Metrics cannot be requested for a manager account. To retrieve metrics, issue separate requests against each client account under the manager account.\n    at Job.task (C:\\Code\\Mike Strickler\\ADs Chatbot\\ai-gateway-experiment\\.next\\dev\\server\\chunks\\_e0dc3b9e._.js:384:198)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","statusCode":400,"timestamp":"2025-11-25 19:55:25:5525"}
+{"error":"google_ads API error during fetchCampaigns","jobId":"<no-id>-bkv9rrld9cm","level":"warn","message":"Rate limiter job failed for google_ads","retryCount":3,"timestamp":"2025-11-25 19:55:25:5525"}
+{"error":{"errorCode":"[object Object]","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:55:25.808Z"},"level":"error","message":"Rate limited execution failed for google_ads","timestamp":"2025-11-25 19:55:25:5525"}
+{"error":{"errorCode":"[object Object]","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:55:25.808Z"},"level":"error","message":"Error syncing google_ads:","timestamp":"2025-11-25 19:55:25:5525","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"duration":4577,"error":{"errorCode":"[object Object]","name":"PlatformAPIError","operation":"fetchCampaigns","originalError":{},"platform":"google_ads","statusCode":400,"timestamp":"2025-11-26T03:55:25.808Z"},"level":"error","message":"Data Sync","platform":"google_ads","status":"failed","timestamp":"2025-11-25 19:55:25:5525","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"level":"info","message":"Data Sync","platform":"google_ads","status":"started","timestamp":"2025-11-25 19:56:50:5650","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"customerId":"7968967431","level":"info","loginCustomerId":"7968967431","message":"Fetching Google Ads campaigns","timestamp":"2025-11-25 19:56:50:5650"}
+{"level":"info","message":"Token Refresh","platform":"google_ads","success":true,"timestamp":"2025-11-25 19:56:50:5650"}
+{"level":"info","message":"Skipping manager account 7968967431","timestamp":"2025-11-25 19:56:51:5651"}
+{"level":"info","message":"Detected manager account, listing client accounts...","timestamp":"2025-11-25 19:56:51:5651"}
+{"count":2,"customerIds":["7968967431","2797697654"],"level":"info","message":"Found accessible customer accounts","timestamp":"2025-11-25 19:56:51:5651"}
+{"level":"info","message":"Found 1 client accounts, fetching campaigns...","timestamp":"2025-11-25 19:56:51:5651"}
+{"level":"info","message":"Fetched 0 campaign records from client 2797697654","timestamp":"2025-11-25 19:56:51:5651"}
+{"clientAccounts":1,"level":"http","message":"API Success","operation":"fetchCampaigns","platform":"google_ads","resultCount":0,"timestamp":"2025-11-25 19:56:51:5651"}
+{"level":"info","message":"No Google Ads campaigns found for this account","timestamp":"2025-11-25 19:56:51:5651"}
+{"campaignsCount":0,"duration":1173,"level":"info","message":"Data Sync","metricsCount":0,"platform":"google_ads","status":"completed","timestamp":"2025-11-25 19:56:51:5651","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"level":"info","message":"Data Sync","platform":"google_ads","status":"started","timestamp":"2025-11-25 20:03:02:32","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"customerId":"7968967431","level":"info","loginCustomerId":"7968967431","message":"Fetching Google Ads campaigns","timestamp":"2025-11-25 20:03:02:32"}
+{"level":"info","message":"Token Refresh","platform":"google_ads","success":true,"timestamp":"2025-11-25 20:03:02:32"}
+{"level":"info","message":"Skipping manager account 7968967431","timestamp":"2025-11-25 20:03:02:32"}
+{"level":"info","message":"Detected manager account, listing client accounts...","timestamp":"2025-11-25 20:03:02:32"}
+{"level":"info","message":"Found client account: Blue Barn (4975275893)","timestamp":"2025-11-25 20:03:03:33"}
+{"level":"info","message":"Found client account: Bluegrass climbing (5284220237)","timestamp":"2025-11-25 20:03:03:33"}
+{"level":"info","message":"Found client account: Borderland Bakery (6456829293)","timestamp":"2025-11-25 20:03:03:33"}
+{"level":"info","message":"Found client account: G&W Machinery (6243753533)","timestamp":"2025-11-25 20:03:03:33"}
+{"level":"info","message":"Found client account: Longitude122 (3304611156)","timestamp":"2025-11-25 20:03:03:33"}
+{"level":"info","message":"Found client account: Madison Event Center (8213656625)","timestamp":"2025-11-25 20:03:03:33"}
+{"level":"info","message":"Found client account: Onpointe (3420147596)","timestamp":"2025-11-25 20:03:03:33"}
+{"level":"info","message":"Found client account: Openfield (3989227248)","timestamp":"2025-11-25 20:03:03:33"}
+{"level":"info","message":"Found client account: Romi Machine Tools (8078354805)","timestamp":"2025-11-25 20:03:03:33"}
+{"level":"info","message":"Found client account: Setco - US (9523233990)","timestamp":"2025-11-25 20:03:03:33"}
+{"level":"info","message":"Found client account: Vesco (1209059845)","timestamp":"2025-11-25 20:03:03:33"}
+{"level":"info","message":"Found client account: ledgeinc (3895787783)","timestamp":"2025-11-25 20:03:03:33"}
+{"count":12,"level":"info","message":"Found client accounts under manager","timestamp":"2025-11-25 20:03:03:33"}
+{"level":"info","message":"Found 12 client accounts, fetching campaigns...","timestamp":"2025-11-25 20:03:03:33"}
+{"level":"info","message":"Fetched 64 campaign records from client 4975275893","timestamp":"2025-11-25 20:03:03:33"}
+{"level":"info","message":"Fetched 62 campaign records from client 5284220237","timestamp":"2025-11-25 20:03:04:34"}
+{"level":"info","message":"Fetched 30 campaign records from client 6243753533","timestamp":"2025-11-25 20:03:05:35"}
+{"level":"info","message":"Fetched 117 campaign records from client 8213656625","timestamp":"2025-11-25 20:03:06:36"}
+{"level":"info","message":"Fetched 131 campaign records from client 3989227248","timestamp":"2025-11-25 20:03:08:38"}
+{"level":"info","message":"Fetched 120 campaign records from client 8078354805","timestamp":"2025-11-25 20:03:08:38"}
+{"level":"info","message":"Fetched 120 campaign records from client 9523233990","timestamp":"2025-11-25 20:03:09:39"}
+{"level":"info","message":"Fetched 86 campaign records from client 1209059845","timestamp":"2025-11-25 20:03:09:39"}
+{"level":"info","message":"Fetched 60 campaign records from client 3895787783","timestamp":"2025-11-25 20:03:10:310"}
+{"clientAccounts":12,"level":"http","message":"API Success","operation":"fetchCampaigns","platform":"google_ads","resultCount":790,"timestamp":"2025-11-25 20:03:10:310"}
+{"campaignsCount":0,"duration":8937,"level":"info","message":"Data Sync","metricsCount":0,"platform":"google_ads","status":"completed","timestamp":"2025-11-25 20:03:10:310","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"level":"info","message":"Data Sync","platform":"google_ads","status":"started","timestamp":"2025-11-25 20:10:52:1052","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"customerId":"7968967431","level":"info","loginCustomerId":"7968967431","message":"Fetching Google Ads campaigns","timestamp":"2025-11-25 20:10:52:1052"}
+{"level":"info","message":"Token Refresh","platform":"google_ads","success":true,"timestamp":"2025-11-25 20:10:52:1052"}
+{"level":"info","message":"Skipping manager account 7968967431","timestamp":"2025-11-25 20:10:53:1053"}
+{"level":"info","message":"Detected manager account, listing client accounts...","timestamp":"2025-11-25 20:10:53:1053"}
+{"level":"info","message":"Found client account: Blue Barn (4975275893)","timestamp":"2025-11-25 20:10:53:1053"}
+{"level":"info","message":"Found client account: Bluegrass climbing (5284220237)","timestamp":"2025-11-25 20:10:53:1053"}
+{"level":"info","message":"Found client account: Borderland Bakery (6456829293)","timestamp":"2025-11-25 20:10:53:1053"}
+{"level":"info","message":"Found client account: G&W Machinery (6243753533)","timestamp":"2025-11-25 20:10:53:1053"}
+{"level":"info","message":"Found client account: Longitude122 (3304611156)","timestamp":"2025-11-25 20:10:53:1053"}
+{"level":"info","message":"Found client account: Madison Event Center (8213656625)","timestamp":"2025-11-25 20:10:53:1053"}
+{"level":"info","message":"Found client account: Onpointe (3420147596)","timestamp":"2025-11-25 20:10:53:1053"}
+{"level":"info","message":"Found client account: Openfield (3989227248)","timestamp":"2025-11-25 20:10:53:1053"}
+{"level":"info","message":"Found client account: Romi Machine Tools (8078354805)","timestamp":"2025-11-25 20:10:53:1053"}
+{"level":"info","message":"Found client account: Setco - US (9523233990)","timestamp":"2025-11-25 20:10:53:1053"}
+{"level":"info","message":"Found client account: Vesco (1209059845)","timestamp":"2025-11-25 20:10:53:1053"}
+{"level":"info","message":"Found client account: ledgeinc (3895787783)","timestamp":"2025-11-25 20:10:53:1053"}
+{"count":12,"level":"info","message":"Found client accounts under manager","timestamp":"2025-11-25 20:10:53:1053"}
+{"level":"info","message":"Found 12 client accounts, fetching campaigns...","timestamp":"2025-11-25 20:10:53:1053"}
+{"level":"info","message":"Fetched 64 campaign records from client 4975275893","timestamp":"2025-11-25 20:10:54:1054"}
+{"level":"info","message":"Fetched 62 campaign records from client 5284220237","timestamp":"2025-11-25 20:10:54:1054"}
+{"level":"info","message":"Fetched 30 campaign records from client 6243753533","timestamp":"2025-11-25 20:10:55:1055"}
+{"level":"info","message":"Fetched 117 campaign records from client 8213656625","timestamp":"2025-11-25 20:10:56:1056"}
+{"level":"info","message":"Fetched 131 campaign records from client 3989227248","timestamp":"2025-11-25 20:10:57:1057"}
+{"level":"info","message":"Fetched 120 campaign records from client 8078354805","timestamp":"2025-11-25 20:10:58:1058"}
+{"level":"info","message":"Fetched 120 campaign records from client 9523233990","timestamp":"2025-11-25 20:10:59:1059"}
+{"level":"info","message":"Fetched 86 campaign records from client 1209059845","timestamp":"2025-11-25 20:11:00:110"}
+{"level":"info","message":"Fetched 60 campaign records from client 3895787783","timestamp":"2025-11-25 20:11:00:110"}
+{"clientAccounts":12,"level":"http","message":"API Success","operation":"fetchCampaigns","platform":"google_ads","resultCount":790,"timestamp":"2025-11-25 20:11:00:110"}
+{"error":{},"level":"error","message":"Error syncing google_ads:","timestamp":"2025-11-25 20:11:01:111","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"duration":8824,"error":{},"level":"error","message":"Data Sync","platform":"google_ads","status":"failed","timestamp":"2025-11-25 20:11:01:111","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"level":"info","message":"Data Sync","platform":"google_ads","status":"started","timestamp":"2025-11-25 20:12:27:1227","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"customerId":"7968967431","level":"info","loginCustomerId":"7968967431","message":"Fetching Google Ads campaigns","timestamp":"2025-11-25 20:12:27:1227"}
+{"level":"info","message":"Token Refresh","platform":"google_ads","success":true,"timestamp":"2025-11-25 20:12:27:1227"}
+{"level":"info","message":"Skipping manager account 7968967431","timestamp":"2025-11-25 20:12:27:1227"}
+{"level":"info","message":"Detected manager account, listing client accounts...","timestamp":"2025-11-25 20:12:27:1227"}
+{"level":"info","message":"Found client account: Blue Barn (4975275893)","timestamp":"2025-11-25 20:12:28:1228"}
+{"level":"info","message":"Found client account: Bluegrass climbing (5284220237)","timestamp":"2025-11-25 20:12:28:1228"}
+{"level":"info","message":"Found client account: Borderland Bakery (6456829293)","timestamp":"2025-11-25 20:12:28:1228"}
+{"level":"info","message":"Found client account: G&W Machinery (6243753533)","timestamp":"2025-11-25 20:12:28:1228"}
+{"level":"info","message":"Found client account: Longitude122 (3304611156)","timestamp":"2025-11-25 20:12:28:1228"}
+{"level":"info","message":"Found client account: Madison Event Center (8213656625)","timestamp":"2025-11-25 20:12:28:1228"}
+{"level":"info","message":"Found client account: Onpointe (3420147596)","timestamp":"2025-11-25 20:12:28:1228"}
+{"level":"info","message":"Found client account: Openfield (3989227248)","timestamp":"2025-11-25 20:12:28:1228"}
+{"level":"info","message":"Found client account: Romi Machine Tools (8078354805)","timestamp":"2025-11-25 20:12:28:1228"}
+{"level":"info","message":"Found client account: Setco - US (9523233990)","timestamp":"2025-11-25 20:12:28:1228"}
+{"level":"info","message":"Found client account: Vesco (1209059845)","timestamp":"2025-11-25 20:12:28:1228"}
+{"level":"info","message":"Found client account: ledgeinc (3895787783)","timestamp":"2025-11-25 20:12:28:1228"}
+{"count":12,"level":"info","message":"Found client accounts under manager","timestamp":"2025-11-25 20:12:28:1228"}
+{"level":"info","message":"Found 12 client accounts, fetching campaigns...","timestamp":"2025-11-25 20:12:28:1228"}
+{"level":"info","message":"Fetched 64 campaign records from client 4975275893","timestamp":"2025-11-25 20:12:28:1228"}
+{"level":"info","message":"Fetched 62 campaign records from client 5284220237","timestamp":"2025-11-25 20:12:29:1229"}
+{"level":"info","message":"Fetched 30 campaign records from client 6243753533","timestamp":"2025-11-25 20:12:30:1230"}
+{"level":"info","message":"Fetched 117 campaign records from client 8213656625","timestamp":"2025-11-25 20:12:32:1232"}
+{"level":"info","message":"Fetched 131 campaign records from client 3989227248","timestamp":"2025-11-25 20:12:33:1233"}
+{"level":"info","message":"Fetched 120 campaign records from client 8078354805","timestamp":"2025-11-25 20:12:34:1234"}
+{"level":"info","message":"Fetched 120 campaign records from client 9523233990","timestamp":"2025-11-25 20:12:34:1234"}
+{"level":"info","message":"Fetched 86 campaign records from client 1209059845","timestamp":"2025-11-25 20:12:35:1235"}
+{"level":"info","message":"Fetched 60 campaign records from client 3895787783","timestamp":"2025-11-25 20:12:35:1235"}
+{"clientAccounts":12,"level":"http","message":"API Success","operation":"fetchCampaigns","platform":"google_ads","resultCount":790,"timestamp":"2025-11-25 20:12:35:1235"}
+{"campaignsCount":29,"duration":9255,"level":"info","message":"Data Sync","metricsCount":0,"platform":"google_ads","status":"completed","timestamp":"2025-11-25 20:12:36:1236","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"level":"info","message":"Data Sync","platform":"google_ads","status":"started","timestamp":"2025-11-25 20:13:47:1347","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"customerId":"7968967431","level":"info","loginCustomerId":"7968967431","message":"Fetching Google Ads campaigns","timestamp":"2025-11-25 20:13:47:1347"}
+{"level":"info","message":"Token Refresh","platform":"google_ads","success":true,"timestamp":"2025-11-25 20:13:48:1348"}
+{"level":"info","message":"Skipping manager account 7968967431","timestamp":"2025-11-25 20:13:48:1348"}
+{"level":"info","message":"Detected manager account, listing client accounts...","timestamp":"2025-11-25 20:13:48:1348"}
+{"level":"info","message":"Found client account: Blue Barn (4975275893)","timestamp":"2025-11-25 20:13:48:1348"}
+{"level":"info","message":"Found client account: Bluegrass climbing (5284220237)","timestamp":"2025-11-25 20:13:48:1348"}
+{"level":"info","message":"Found client account: Borderland Bakery (6456829293)","timestamp":"2025-11-25 20:13:48:1348"}
+{"level":"info","message":"Found client account: G&W Machinery (6243753533)","timestamp":"2025-11-25 20:13:48:1348"}
+{"level":"info","message":"Found client account: Longitude122 (3304611156)","timestamp":"2025-11-25 20:13:48:1348"}
+{"level":"info","message":"Found client account: Madison Event Center (8213656625)","timestamp":"2025-11-25 20:13:48:1348"}
+{"level":"info","message":"Found client account: Onpointe (3420147596)","timestamp":"2025-11-25 20:13:48:1348"}
+{"level":"info","message":"Found client account: Openfield (3989227248)","timestamp":"2025-11-25 20:13:48:1348"}
+{"level":"info","message":"Found client account: Romi Machine Tools (8078354805)","timestamp":"2025-11-25 20:13:48:1348"}
+{"level":"info","message":"Found client account: Setco - US (9523233990)","timestamp":"2025-11-25 20:13:48:1348"}
+{"level":"info","message":"Found client account: Vesco (1209059845)","timestamp":"2025-11-25 20:13:48:1348"}
+{"level":"info","message":"Found client account: ledgeinc (3895787783)","timestamp":"2025-11-25 20:13:48:1348"}
+{"count":12,"level":"info","message":"Found client accounts under manager","timestamp":"2025-11-25 20:13:48:1348"}
+{"level":"info","message":"Found 12 client accounts, fetching campaigns...","timestamp":"2025-11-25 20:13:48:1348"}
+{"level":"info","message":"Fetched 64 campaign records from client 4975275893","timestamp":"2025-11-25 20:13:49:1349"}
+{"level":"info","message":"Fetched 62 campaign records from client 5284220237","timestamp":"2025-11-25 20:13:50:1350"}
+{"level":"info","message":"Fetched 30 campaign records from client 6243753533","timestamp":"2025-11-25 20:13:51:1351"}
+{"level":"info","message":"Fetched 117 campaign records from client 8213656625","timestamp":"2025-11-25 20:13:52:1352"}
+{"level":"info","message":"Fetched 131 campaign records from client 3989227248","timestamp":"2025-11-25 20:13:54:1354"}
+{"level":"info","message":"Fetched 120 campaign records from client 8078354805","timestamp":"2025-11-25 20:13:54:1354"}
+{"level":"info","message":"Fetched 120 campaign records from client 9523233990","timestamp":"2025-11-25 20:13:55:1355"}
+{"level":"info","message":"Fetched 86 campaign records from client 1209059845","timestamp":"2025-11-25 20:13:56:1356"}
+{"level":"info","message":"Fetched 60 campaign records from client 3895787783","timestamp":"2025-11-25 20:13:56:1356"}
+{"clientAccounts":12,"level":"http","message":"API Success","operation":"fetchCampaigns","platform":"google_ads","resultCount":790,"timestamp":"2025-11-25 20:13:56:1356"}
+{"campaignsCount":29,"duration":9748,"level":"info","message":"Data Sync","metricsCount":0,"platform":"google_ads","status":"completed","timestamp":"2025-11-25 20:13:57:1357","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"level":"info","message":"Data Sync","platform":"google_ads","status":"started","timestamp":"2025-11-25 20:15:30:1530","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"customerId":"7968967431","level":"info","loginCustomerId":"7968967431","message":"Fetching Google Ads campaigns","timestamp":"2025-11-25 20:15:30:1530"}
+{"level":"info","message":"Token Refresh","platform":"google_ads","success":true,"timestamp":"2025-11-25 20:15:30:1530"}
+{"level":"info","message":"Skipping manager account 7968967431","timestamp":"2025-11-25 20:15:31:1531"}
+{"level":"info","message":"Detected manager account, listing client accounts...","timestamp":"2025-11-25 20:15:31:1531"}
+{"level":"info","message":"Found client account: Blue Barn (4975275893)","timestamp":"2025-11-25 20:15:31:1531"}
+{"level":"info","message":"Found client account: Bluegrass climbing (5284220237)","timestamp":"2025-11-25 20:15:31:1531"}
+{"level":"info","message":"Found client account: Borderland Bakery (6456829293)","timestamp":"2025-11-25 20:15:31:1531"}
+{"level":"info","message":"Found client account: G&W Machinery (6243753533)","timestamp":"2025-11-25 20:15:31:1531"}
+{"level":"info","message":"Found client account: Longitude122 (3304611156)","timestamp":"2025-11-25 20:15:31:1531"}
+{"level":"info","message":"Found client account: Madison Event Center (8213656625)","timestamp":"2025-11-25 20:15:31:1531"}
+{"level":"info","message":"Found client account: Onpointe (3420147596)","timestamp":"2025-11-25 20:15:31:1531"}
+{"level":"info","message":"Found client account: Openfield (3989227248)","timestamp":"2025-11-25 20:15:31:1531"}
+{"level":"info","message":"Found client account: Romi Machine Tools (8078354805)","timestamp":"2025-11-25 20:15:31:1531"}
+{"level":"info","message":"Found client account: Setco - US (9523233990)","timestamp":"2025-11-25 20:15:31:1531"}
+{"level":"info","message":"Found client account: Vesco (1209059845)","timestamp":"2025-11-25 20:15:31:1531"}
+{"level":"info","message":"Found client account: ledgeinc (3895787783)","timestamp":"2025-11-25 20:15:31:1531"}
+{"count":12,"level":"info","message":"Found client accounts under manager","timestamp":"2025-11-25 20:15:31:1531"}
+{"level":"info","message":"Found 12 client accounts, fetching campaigns...","timestamp":"2025-11-25 20:15:31:1531"}
+{"level":"info","message":"Fetched 64 campaign records from client 4975275893","timestamp":"2025-11-25 20:15:31:1531"}
+{"level":"info","message":"Fetched 62 campaign records from client 5284220237","timestamp":"2025-11-25 20:15:32:1532"}
+{"level":"info","message":"Fetched 30 campaign records from client 6243753533","timestamp":"2025-11-25 20:15:33:1533"}
+{"level":"info","message":"Fetched 117 campaign records from client 8213656625","timestamp":"2025-11-25 20:15:34:1534"}
+{"level":"info","message":"Fetched 131 campaign records from client 3989227248","timestamp":"2025-11-25 20:15:35:1535"}
+{"level":"info","message":"Fetched 120 campaign records from client 8078354805","timestamp":"2025-11-25 20:15:36:1536"}
+{"level":"info","message":"Fetched 120 campaign records from client 9523233990","timestamp":"2025-11-25 20:15:37:1537"}
+{"level":"info","message":"Fetched 86 campaign records from client 1209059845","timestamp":"2025-11-25 20:15:37:1537"}
+{"level":"info","message":"Fetched 60 campaign records from client 3895787783","timestamp":"2025-11-25 20:15:38:1538"}
+{"clientAccounts":12,"level":"http","message":"API Success","operation":"fetchCampaigns","platform":"google_ads","resultCount":790,"timestamp":"2025-11-25 20:15:38:1538"}
+{"campaignsCount":29,"duration":8596,"level":"info","message":"Data Sync","metricsCount":790,"platform":"google_ads","status":"completed","timestamp":"2025-11-25 20:15:39:1539","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"level":"info","message":"Data Sync","platform":"google_ads","status":"started","timestamp":"2025-11-25 20:32:45:3245","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"customerId":"7968967431","level":"info","loginCustomerId":"7968967431","message":"Fetching Google Ads campaigns","timestamp":"2025-11-25 20:32:45:3245"}
+{"level":"info","message":"Token Refresh","platform":"google_ads","success":true,"timestamp":"2025-11-25 20:32:45:3245"}
+{"level":"info","message":"Skipping manager account 7968967431","timestamp":"2025-11-25 20:32:46:3246"}
+{"level":"info","message":"Detected manager account, listing client accounts...","timestamp":"2025-11-25 20:32:46:3246"}
+{"level":"info","message":"Found client account: Blue Barn (4975275893)","timestamp":"2025-11-25 20:32:46:3246"}
+{"level":"info","message":"Found client account: Bluegrass climbing (5284220237)","timestamp":"2025-11-25 20:32:46:3246"}
+{"level":"info","message":"Found client account: Borderland Bakery (6456829293)","timestamp":"2025-11-25 20:32:46:3246"}
+{"level":"info","message":"Found client account: G&W Machinery (6243753533)","timestamp":"2025-11-25 20:32:46:3246"}
+{"level":"info","message":"Found client account: Longitude122 (3304611156)","timestamp":"2025-11-25 20:32:46:3246"}
+{"level":"info","message":"Found client account: Madison Event Center (8213656625)","timestamp":"2025-11-25 20:32:46:3246"}
+{"level":"info","message":"Found client account: Onpointe (3420147596)","timestamp":"2025-11-25 20:32:46:3246"}
+{"level":"info","message":"Found client account: Openfield (3989227248)","timestamp":"2025-11-25 20:32:46:3246"}
+{"level":"info","message":"Found client account: Romi Machine Tools (8078354805)","timestamp":"2025-11-25 20:32:46:3246"}
+{"level":"info","message":"Found client account: Setco - US (9523233990)","timestamp":"2025-11-25 20:32:46:3246"}
+{"level":"info","message":"Found client account: Vesco (1209059845)","timestamp":"2025-11-25 20:32:46:3246"}
+{"level":"info","message":"Found client account: ledgeinc (3895787783)","timestamp":"2025-11-25 20:32:46:3246"}
+{"count":12,"level":"info","message":"Found client accounts under manager","timestamp":"2025-11-25 20:32:46:3246"}
+{"level":"info","message":"Found 12 client accounts, fetching campaigns...","timestamp":"2025-11-25 20:32:46:3246"}
+{"level":"info","message":"Fetched 64 campaign records from client 4975275893","timestamp":"2025-11-25 20:32:47:3247"}
+{"level":"info","message":"Fetched 62 campaign records from client 5284220237","timestamp":"2025-11-25 20:32:48:3248"}
+{"level":"info","message":"Fetched 30 campaign records from client 6243753533","timestamp":"2025-11-25 20:32:49:3249"}
+{"level":"info","message":"Fetched 117 campaign records from client 8213656625","timestamp":"2025-11-25 20:32:51:3251"}
+{"level":"info","message":"Fetched 131 campaign records from client 3989227248","timestamp":"2025-11-25 20:32:52:3252"}
+{"level":"info","message":"Fetched 120 campaign records from client 8078354805","timestamp":"2025-11-25 20:32:53:3253"}
+{"level":"info","message":"Fetched 120 campaign records from client 9523233990","timestamp":"2025-11-25 20:32:54:3254"}
+{"level":"info","message":"Fetched 86 campaign records from client 1209059845","timestamp":"2025-11-25 20:32:54:3254"}
+{"level":"info","message":"Fetched 60 campaign records from client 3895787783","timestamp":"2025-11-25 20:32:55:3255"}
+{"clientAccounts":12,"level":"http","message":"API Success","operation":"fetchCampaigns","platform":"google_ads","resultCount":790,"timestamp":"2025-11-25 20:32:55:3255"}
+{"campaignsCount":29,"duration":10539,"level":"info","message":"Data Sync","metricsCount":0,"platform":"google_ads","status":"completed","timestamp":"2025-11-25 20:32:56:3256","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"level":"info","message":"Data Sync","platform":"google_ads","status":"started","timestamp":"2025-11-25 20:33:26:3326","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}
+{"customerId":"7968967431","level":"info","loginCustomerId":"7968967431","message":"Fetching Google Ads campaigns","timestamp":"2025-11-25 20:33:26:3326"}
+{"level":"info","message":"Token Refresh","platform":"google_ads","success":true,"timestamp":"2025-11-25 20:33:26:3326"}
+{"level":"info","message":"Skipping manager account 7968967431","timestamp":"2025-11-25 20:33:26:3326"}
+{"level":"info","message":"Detected manager account, listing client accounts...","timestamp":"2025-11-25 20:33:26:3326"}
+{"level":"info","message":"Found client account: Blue Barn (4975275893)","timestamp":"2025-11-25 20:33:27:3327"}
+{"level":"info","message":"Found client account: Bluegrass climbing (5284220237)","timestamp":"2025-11-25 20:33:27:3327"}
+{"level":"info","message":"Found client account: Borderland Bakery (6456829293)","timestamp":"2025-11-25 20:33:27:3327"}
+{"level":"info","message":"Found client account: G&W Machinery (6243753533)","timestamp":"2025-11-25 20:33:27:3327"}
+{"level":"info","message":"Found client account: Longitude122 (3304611156)","timestamp":"2025-11-25 20:33:27:3327"}
+{"level":"info","message":"Found client account: Madison Event Center (8213656625)","timestamp":"2025-11-25 20:33:27:3327"}
+{"level":"info","message":"Found client account: Onpointe (3420147596)","timestamp":"2025-11-25 20:33:27:3327"}
+{"level":"info","message":"Found client account: Openfield (3989227248)","timestamp":"2025-11-25 20:33:27:3327"}
+{"level":"info","message":"Found client account: Romi Machine Tools (8078354805)","timestamp":"2025-11-25 20:33:27:3327"}
+{"level":"info","message":"Found client account: Setco - US (9523233990)","timestamp":"2025-11-25 20:33:27:3327"}
+{"level":"info","message":"Found client account: Vesco (1209059845)","timestamp":"2025-11-25 20:33:27:3327"}
+{"level":"info","message":"Found client account: ledgeinc (3895787783)","timestamp":"2025-11-25 20:33:27:3327"}
+{"count":12,"level":"info","message":"Found client accounts under manager","timestamp":"2025-11-25 20:33:27:3327"}
+{"level":"info","message":"Found 12 client accounts, fetching campaigns...","timestamp":"2025-11-25 20:33:27:3327"}
+{"level":"info","message":"Fetched 64 campaign records from client 4975275893","timestamp":"2025-11-25 20:33:27:3327"}
+{"level":"info","message":"Fetched 62 campaign records from client 5284220237","timestamp":"2025-11-25 20:33:28:3328"}
+{"level":"info","message":"Fetched 30 campaign records from client 6243753533","timestamp":"2025-11-25 20:33:30:3330"}
+{"level":"info","message":"Fetched 117 campaign records from client 8213656625","timestamp":"2025-11-25 20:33:31:3331"}
+{"level":"info","message":"Fetched 131 campaign records from client 3989227248","timestamp":"2025-11-25 20:33:32:3332"}
+{"level":"info","message":"Fetched 120 campaign records from client 8078354805","timestamp":"2025-11-25 20:33:33:3333"}
+{"level":"info","message":"Fetched 120 campaign records from client 9523233990","timestamp":"2025-11-25 20:33:34:3334"}
+{"level":"info","message":"Fetched 86 campaign records from client 1209059845","timestamp":"2025-11-25 20:33:35:3335"}
+{"level":"info","message":"Fetched 60 campaign records from client 3895787783","timestamp":"2025-11-25 20:33:35:3335"}
+{"clientAccounts":12,"level":"http","message":"API Success","operation":"fetchCampaigns","platform":"google_ads","resultCount":790,"timestamp":"2025-11-25 20:33:35:3335"}
+{"campaignsCount":29,"duration":9963,"level":"info","message":"Data Sync","metricsCount":0,"platform":"google_ads","status":"completed","timestamp":"2025-11-25 20:33:36:3336","userId":"3ecce315-e60e-4427-bff5-4376a4965708"}

@@ -1,0 +1,30 @@
+module.exports=[95808,e=>{"use strict";var t=e.i(100),o=e.i(52787);async function r(e,o,r){try{let s=await fetch("https://oauth2.googleapis.com/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({client_id:e,client_secret:o,refresh_token:r,grant_type:"refresh_token"})}),n=await s.json();if(!s.ok){let e=n.error_description||n.error||"Failed to refresh access token";throw(0,t.logTokenRefresh)("google_ads",!1,void 0,Error(e)),new t.PlatformAPIError("google_ads","refreshToken",Error(e),s.status,n.error)}if(!n.access_token){let e=Error("No access token returned from Google OAuth refresh flow");throw(0,t.logTokenRefresh)("google_ads",!1,void 0,e),e}return(0,t.logTokenRefresh)("google_ads",!0),n.access_token}catch(e){throw e}}async function s(e,o){let r=await fetch("https://googleads.googleapis.com/v21/customers:listAccessibleCustomers",{method:"GET",headers:{"Content-Type":"application/json",Authorization:`Bearer ${e}`,"developer-token":o}}),s=await r.json();if(!r.ok)return console.error("Failed to list accessible customers:",JSON.stringify(s,null,2)),[];let n=(s.resourceNames||[]).map(e=>e.replace("customers/",""));return t.default.info("Found accessible customer accounts",{count:n.length,customerIds:n}),n}async function n(e,o,r){let s=`
+    SELECT 
+      customer_client.client_customer,
+      customer_client.level,
+      customer_client.manager,
+      customer_client.status,
+      customer_client.descriptive_name
+    FROM customer_client
+    WHERE customer_client.level = 1
+      AND customer_client.status = 'ENABLED'
+  `,n=`https://googleads.googleapis.com/v21/customers/${e}/googleAds:search`,a=await fetch(n,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${o}`,"developer-token":r,"login-customer-id":e},body:JSON.stringify({query:s})}),i=await a.json();if(!a.ok)return console.error("Failed to list client accounts:",JSON.stringify(i,null,2)),[];let c=[];for(let e of i.results||[]){let o=e?.customerClient?.clientCustomer,r=e?.customerClient?.manager===!0,s=e?.customerClient?.descriptiveName||"Unknown";if(o&&!r){let e=o.replace("customers/","");c.push({id:e,name:s}),t.default.info(`Found client account: ${s} (${e})`)}}return t.default.info("Found client accounts under manager",{count:c.length}),c}async function a(e,o,r,s){let n=`
+    SELECT
+      campaign.id,
+      campaign.name,
+      campaign.status,
+      campaign_budget.amount_micros,
+      metrics.impressions,
+      metrics.clicks,
+      metrics.conversions,
+      metrics.conversions_value,
+      metrics.cost_micros,
+      metrics.ctr,
+      metrics.average_cpc,
+      segments.date
+    FROM campaign
+    WHERE segments.date DURING LAST_30_DAYS
+    ORDER BY metrics.clicks DESC
+  `,a=`https://googleads.googleapis.com/v21/customers/${e}/googleAds:search`,i=await fetch(a,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${o}`,"developer-token":r,...s?{"login-customer-id":s}:{}},body:JSON.stringify({query:n})}),c=await i.json();if(!i.ok){let o=c.error?.details?.[0]?.errors?.[0]||c.error,r=o?.message||c.error?.message||"Unknown error",s=o?.errorCode;return s?.queryError==="REQUESTED_METRICS_FOR_MANAGER"?(t.default.info(`Skipping manager account ${e}`),{results:[],isManager:!0}):(console.error(`Error fetching from customer ${e}:`,r),{results:[],error:r})}return c}async function i(e){if(!e.refreshToken)throw Error("Missing refresh token for Google Ads OAuth flow");let i=e.customerId.replace(/-/g,""),c=e.loginCustomerId?.replace(/-/g,"")||i;t.default.info("Fetching Google Ads campaigns",{customerId:i,loginCustomerId:c});let l=await r(e.clientId,e.clientSecret,e.refreshToken),u=await (0,o.withRateLimit)("google_ads",async()=>a(i,l,e.developerToken,c));if(!u.isManager&&u.results?.length>0){let e=u.results.length;return(0,t.logAPISuccess)("google_ads","fetchCampaigns",{resultCount:e,customerId:i}),u}if(u.isManager){t.default.info("Detected manager account, listing client accounts...");let o=await n(i,l,e.developerToken);if(0===o.length&&(t.default.info("No clients from CustomerClient, trying listAccessibleCustomers..."),o=(await s(l,e.developerToken)).filter(e=>e!==i).map(e=>({id:e,name:`Account ${e}`}))),0===o.length)return t.default.warn("No client accounts found under manager account"),{results:[],clientAccounts:[]};t.default.info(`Found ${o.length} client accounts, fetching campaigns...`);let r=[];for(let s of o)try{let o=await a(s.id,l,e.developerToken,c);if(o.results&&!o.isManager){let e=o.results.map(e=>({...e,_clientCustomerId:s.id,_clientCustomerName:s.name}));r.push(...e),t.default.info(`Fetched ${o.results.length} campaign records from client ${s.id}`)}}catch(e){t.default.warn(`Failed to fetch from client ${s.id}: ${e.message}`)}let u=r.length;return(0,t.logAPISuccess)("google_ads","fetchCampaigns",{resultCount:u,clientAccounts:o.length}),{results:r,clientAccounts:o}}return t.default.info("No Google Ads campaigns found"),{results:[]}}function c(e){let t=[],o=[],r=new Map;return(Array.isArray(e?.results)?e.results:[]).forEach(e=>{let t=e?.campaign;if(!t?.id)return;let s=t.id.toString(),n=e?._clientCustomerId||null,a=e?._clientCustomerName||null;if(!r.has(s)){var i;let o=e?.campaignBudget?.amountMicros;r.set(s,{campaign_id:s,campaign_name:t.name,platform:"google_ads",status:{ENABLED:"active",PAUSED:"paused",REMOVED:"archived"}[i=t.status]||i.toLowerCase(),budget_amount:o?Number(o)/1e6:null,customer_id:n,customer_name:a})}let c=e?.metrics??{},l=e?.segments??{};o.push({campaign_api_id:s,date:l.date||new Date().toISOString().split("T")[0],impressions:c.impressions?Number(c.impressions):0,clicks:c.clicks?Number(c.clicks):0,conversions:c.conversions?Number(c.conversions):0,spend:c.costMicros?Number(c.costMicros)/1e6:0,revenue:c.conversionsValue?Number(c.conversionsValue):0})}),t.push(...r.values()),{campaigns:t,metrics:o,customers:e?.clientAccounts||[]}}e.s(["fetchGoogleAdsCampaigns",()=>i,"getGoogleAdsAccessToken",()=>r,"transformGoogleAdsData",()=>c])}];
+
+//# sourceMappingURL=lib_google-ads_client_ts_c4acd3c8._.js.map
