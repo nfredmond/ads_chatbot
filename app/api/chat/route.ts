@@ -156,6 +156,45 @@ export async function POST(request: NextRequest) {
       })).sort((a, b) => b.spend - a.spend);
     }
 
+    // Calculate campaign-level performance metrics
+    const campaignMetricsMap = new Map<string, {
+      spend: number; revenue: number; conversions: number; clicks: number; impressions: number;
+    }>();
+    for (const metric of recentMetrics) {
+      const existing = campaignMetricsMap.get(metric.campaign_id) || {
+        spend: 0, revenue: 0, conversions: 0, clicks: 0, impressions: 0
+      };
+      existing.spend += Number(metric.spend) || 0;
+      existing.revenue += Number(metric.revenue) || 0;
+      existing.conversions += Number(metric.conversions) || 0;
+      existing.clicks += metric.clicks || 0;
+      existing.impressions += metric.impressions || 0;
+      campaignMetricsMap.set(metric.campaign_id, existing);
+    }
+
+    const campaignPerformance = campaigns.map(c => {
+      const metrics = campaignMetricsMap.get(c.id) || { spend: 0, revenue: 0, conversions: 0, clicks: 0, impressions: 0 };
+      return {
+        name: c.campaign_name,
+        customer: c.customer_name || 'Unknown',
+        platform: c.platform,
+        status: c.status,
+        spend: metrics.spend,
+        revenue: metrics.revenue,
+        roas: metrics.spend > 0 ? metrics.revenue / metrics.spend : 0,
+        conversions: metrics.conversions,
+        clicks: metrics.clicks,
+        impressions: metrics.impressions,
+        ctr: metrics.impressions > 0 ? (metrics.clicks / metrics.impressions) * 100 : 0,
+        cpc: metrics.clicks > 0 ? metrics.spend / metrics.clicks : 0,
+      };
+    }).sort((a, b) => b.spend - a.spend);
+
+    // Calculate insights
+    const avgCPC = totalClicks > 0 ? totalSpend / totalClicks : 0;
+    const conversionRate = totalClicks > 0 ? (totalConversions / totalClicks) * 100 : 0;
+    const costPerConversion = totalConversions > 0 ? totalSpend / totalConversions : 0;
+
     console.log(`Chat API: User ${user?.id}, Tenant ${tenantId}, Accounts: ${adAccounts.length}, Campaigns: ${campaigns.length}, Metrics: ${recentMetrics.length}, Customers: ${customerMetrics.length}`);
 
     // Build campaign platform map
@@ -236,8 +275,25 @@ ${JSON.stringify(
   2
 )}
 
-CAMPAIGN LIST:
-${campaigns.map(c => `- ${c.campaign_name} (${c.platform.replace('_ads', '')}): ${c.status}`).join('\n')}
+DETAILED CAMPAIGN PERFORMANCE (top 20 by spend):
+${campaignPerformance.slice(0, 20).map((c, i) => 
+  `${i + 1}. ${c.name} (${c.customer}): $${c.spend.toFixed(2)} spend, $${c.revenue.toFixed(2)} revenue, ${c.roas.toFixed(2)}x ROAS, ${c.conversions.toFixed(0)} conversions, ${c.ctr.toFixed(2)}% CTR`
+).join('\n')}
+
+BEST PERFORMING CAMPAIGNS (ROAS > 4x with spend > $50):
+${campaignPerformance.filter(c => c.roas >= 4 && c.spend > 50).slice(0, 8).map(c => 
+  `- ${c.name} (${c.customer}): ${c.roas.toFixed(2)}x ROAS on $${c.spend.toFixed(2)} spend, ${c.conversions.toFixed(0)} conversions`
+).join('\n') || 'None identified with ROAS > 4x'}
+
+UNDERPERFORMING CAMPAIGNS (ROAS < 1x with spend > $100):
+${campaignPerformance.filter(c => c.roas < 1 && c.spend > 100).slice(0, 8).map(c => 
+  `- ${c.name} (${c.customer}): ${c.roas.toFixed(2)}x ROAS on $${c.spend.toFixed(2)} spend - consider pausing or restructuring`
+).join('\n') || 'No significantly underperforming campaigns identified'}
+
+KEY EFFICIENCY METRICS:
+- Average CPC: $${avgCPC.toFixed(2)}
+- Conversion Rate: ${conversionRate.toFixed(2)}%
+- Cost Per Conversion: $${costPerConversion.toFixed(2)}
 
 CLIENT/CUSTOMER PERFORMANCE (sorted by spend):
 ${customerMetrics.length > 0 ? customerMetrics.slice(0, 15).map((c, i) => 
@@ -272,11 +328,17 @@ Guide them to connect their accounts first.`}
 You should:
 - Provide actionable insights about campaign performance
 - Suggest optimization strategies based on actual data
-- Explain metrics like ROAS, CTR, CPA, and conversions
+- Explain metrics like ROAS, CTR, CPA, CPC, and conversions in plain language
 - Compare platforms when asked
 - Be concise but thorough
-- Use specific numbers from their actual data
+- Use specific numbers from their actual data - always cite real figures
 - If they have data, proactively highlight interesting patterns or concerns
+- Recommend specific actions: which campaigns to scale, pause, or optimize
+- When discussing a specific client, reference their full performance data
+- For campaign questions, provide detailed analysis including spend, revenue, ROAS, and CTR
+- Identify patterns across clients and campaigns
+- Suggest budget reallocation based on performance data
+- Alert about any campaigns that need immediate attention (high spend, low ROAS)
 
 ${customInstructions ? `
 USER'S CUSTOM INSTRUCTIONS (follow these preferences):
