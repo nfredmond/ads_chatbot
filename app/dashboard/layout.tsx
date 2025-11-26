@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { BarChart3, MessageSquare, Settings, RefreshCw, LogOut, ChevronDown, Play } from 'lucide-react';
+import { BarChart3, MessageSquare, Settings, RefreshCw, LogOut, ChevronDown, Play, Menu, X } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
@@ -13,6 +13,15 @@ const navItems = [
   { href: '/dashboard/chat', icon: MessageSquare, label: 'AI Chat' },
   { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
+
+// Helper to set demo mode cookie
+function setDemoModeCookie(enabled: boolean) {
+  if (enabled) {
+    document.cookie = 'demo_mode=true; path=/; max-age=86400; SameSite=Lax';
+  } else {
+    document.cookie = 'demo_mode=; path=/; max-age=0';
+  }
+}
 
 export default function DashboardLayout({
   children,
@@ -26,20 +35,17 @@ export default function DashboardLayout({
   const [loading, setLoading] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
   // Always check auth first, then determine if demo mode applies
   useEffect(() => {
     const checkAuthAndDemoMode = async () => {
-      // Check for demo mode in URL params
+      // Check for demo mode in URL params or cookie
       const urlParams = new URLSearchParams(window.location.search);
       const demoFromUrl = urlParams.get('demo') === 'true';
-      
-      if (demoFromUrl) {
-        // Clean the URL
-        window.history.replaceState({}, '', window.location.pathname);
-      }
+      const demoFromCookie = document.cookie.includes('demo_mode=true');
       
       // Always check auth first
       const { data: { user } } = await supabase.auth.getUser();
@@ -48,17 +54,19 @@ export default function DashboardLayout({
       // If user is logged in, ALWAYS clear demo mode
       if (user) {
         localStorage.removeItem('demo_mode');
+        setDemoModeCookie(false);
         setIsDemoMode(false);
         setLoading(false);
         return;
       }
       
       // User is NOT logged in - check if demo mode is requested
-      const demoMode = localStorage.getItem('demo_mode') === 'true' || demoFromUrl;
+      const demoMode = localStorage.getItem('demo_mode') === 'true' || demoFromUrl || demoFromCookie;
       
       if (demoMode) {
-        // Set demo mode for unauthenticated users
+        // Set demo mode for unauthenticated users (both localStorage and cookie)
         localStorage.setItem('demo_mode', 'true');
+        setDemoModeCookie(true);
         setIsDemoMode(true);
         setLoading(false);
       } else {
@@ -76,8 +84,9 @@ export default function DashboardLayout({
       // If user logs in, clear demo mode
       if (session?.user) {
         localStorage.removeItem('demo_mode');
+        setDemoModeCookie(false);
         setIsDemoMode(false);
-      } else if (!localStorage.getItem('demo_mode')) {
+      } else if (!localStorage.getItem('demo_mode') && !document.cookie.includes('demo_mode=true')) {
         // User logged out and not in demo mode
         router.push('/login');
       }
@@ -118,8 +127,14 @@ export default function DashboardLayout({
 
   const handleExitDemo = () => {
     localStorage.removeItem('demo_mode');
+    setDemoModeCookie(false);
     router.push('/login');
   };
+
+  // Close sidebar when route changes on mobile
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
 
   const userInitial = user?.email?.charAt(0).toUpperCase() || 'D';
   const displayEmail = user?.email || 'Demo User';
@@ -134,10 +149,45 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen gradient-bg flex">
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur-sm border-b border-white/10 px-4 py-3 flex items-center justify-between">
+        <Link href="/dashboard" className="flex items-center gap-2">
+          <Image
+            src="/logo.png"
+            alt="Marketing Analytics"
+            width={32}
+            height={32}
+            className="rounded-lg"
+          />
+          <span className="text-lg font-semibold text-blue-400">Analytics</span>
+        </Link>
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-2 rounded-lg bg-white/5 border border-white/10"
+        >
+          {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 border-r border-white/10 p-6 flex flex-col">
-        {/* Logo */}
-        <Link href="/dashboard" className="flex items-center gap-3 mb-8">
+      <aside className={`
+        fixed lg:static inset-y-0 left-0 z-40
+        w-64 border-r border-white/10 p-6 flex flex-col
+        bg-gray-900 lg:bg-transparent
+        transform transition-transform duration-300 ease-in-out
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        pt-20 lg:pt-6
+      `}>
+        {/* Logo - Desktop Only */}
+        <Link href="/dashboard" className="hidden lg:flex items-center gap-3 mb-8">
           <Image
             src="/logo.png"
             alt="Marketing Analytics"
@@ -253,7 +303,7 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto p-6">
+      <main className="flex-1 overflow-auto p-4 lg:p-6 pt-20 lg:pt-6">
         {children}
       </main>
     </div>

@@ -143,7 +143,9 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={() => {
+              // Set both localStorage and cookie for demo mode
               localStorage.setItem('demo_mode', 'true')
+              document.cookie = 'demo_mode=true; path=/; max-age=86400; SameSite=Lax'
               window.location.href = '/dashboard?demo=true'
             }}
             className="w-full py-3 px-4 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-400 font-medium transition-colors flex items-center justify-center gap-2"

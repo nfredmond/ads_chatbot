@@ -23,12 +23,23 @@ export async function updateSession(request: NextRequest) {
     )
   })
 
-  // Check if demo mode is requested via query param
-  const isDemoMode = request.nextUrl.searchParams.get('demo') === 'true'
+  // Check if demo mode is requested via query param or cookie
+  const isDemoFromUrl = request.nextUrl.searchParams.get('demo') === 'true'
+  const isDemoFromCookie = request.cookies.get('demo_mode')?.value === 'true'
+  const isDemoMode = isDemoFromUrl || isDemoFromCookie
   
   // Allow dashboard access in demo mode
   if (isDemoMode && request.nextUrl.pathname.startsWith('/dashboard')) {
-    return NextResponse.next({ request })
+    const response = NextResponse.next({ request })
+    // Set/refresh the demo mode cookie if coming from URL param
+    if (isDemoFromUrl && !isDemoFromCookie) {
+      response.cookies.set('demo_mode', 'true', {
+        path: '/',
+        maxAge: 86400, // 24 hours
+        sameSite: 'lax',
+      })
+    }
+    return response
   }
 
   // For public routes (especially /demo), skip ALL authentication logic
