@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Ads API - Design Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 8.5in;
+            margin: 0 auto;
+            padding: 0.5in;
+            background: white;
+        }
+        
+        h1 {
+            color: #1a73e8;
+            font-size: 28px;
+            margin-bottom: 10px;
+            border-bottom: 3px solid #1a73e8;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            color: #1a73e8;
+            font-size: 20px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        
+        h3 {
+            color: #333;
+            font-size: 16px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        
+        p {
+            margin-bottom: 12px;
+            text-align: justify;
+        }
+        
+        ul, ol {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .company-info {
+            background: #f8f9fa;
+            border-left: 4px solid #1a73e8;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .screenshot {
+            text-align: center;
+            margin: 20px 0;
+            page-break-inside: avoid;
+        }
+        
+        .screenshot img {
+            max-width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .screenshot-caption {
+            font-size: 12px;
+            color: #666;
+            margin-top: 8px;
+            font-style: italic;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+        
+        .api-section {
+            background: #e8f0fe;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Marketing Analytics Platform</h1>
+        <p class="subtitle">Google Ads API Design Documentation</p>
+        <p class="subtitle">Version 1.0 | November 2025</p>
+    </div>
+
+    <h2>1. Company Information</h2>
+    
+    <div class="company-info">
+        <h3>Longitude 122 Marketing</h3>
+        <p><strong>Website:</strong> <a href="https://longitude122marketing.com">https://longitude122marketing.com</a></p>
+        <p><strong>Location:</strong> San Diego, California (Main Office) with additional offices in Los Angeles, Sacramento, and Napa</p>
+        <p><strong>Founded:</strong> 2020</p>
+        <p><strong>Contact:</strong> Mike Strickler (Owner)</p>
+    </div>
+    
+    <p>Longitude 122 Marketing is a full-service digital advertising agency specializing in digital marketing, reporting, ad strategy, and performance analytics. Since founding in 2020, the company has generated over <strong>1 billion impressions</strong> and manages over <strong>$1 million in annual advertising spend</strong> across multiple platforms for clients throughout California and the United States.</p>
+    
+    <p>The company focuses on transparent reporting and data-driven strategies that maximize advertising reach without compromising on budget efficiency. This marketing analytics platform is built to support these core business objectives.</p>
+
+    <h2>2. Tool Purpose & Overview</h2>
+    
+    <p>The <strong>Marketing Analytics Platform</strong> is an internal business tool designed to help Longitude 122 Marketing's team view and analyze advertising campaign performance across multiple platforms. The tool consolidates data from Google Ads, Meta Ads (Facebook/Instagram), and LinkedIn Ads into a unified dashboard with AI-powered insights.</p>
+    
+    <h3>Primary Use Cases:</h3>
+    <ul>
+        <li><strong>Performance Reporting:</strong> View aggregated metrics across all advertising platforms in a single dashboard</li>
+        <li><strong>AI-Powered Analysis:</strong> Chat with an AI assistant to get insights, recommendations, and answers about campaign performance</li>
+        <li><strong>Cross-Platform Comparison:</strong> Compare performance metrics between Google Ads, Meta Ads, and LinkedIn Ads</li>
+        <li><strong>Trend Analysis:</strong> Track spend, revenue, conversions, and ROAS over time</li>
+        <li><strong>Client Reporting:</strong> Generate performance reports for agency clients</li>
+    </ul>
+    
+    <h3>Target Users:</h3>
+    <ul>
+        <li>Agency employees and ad managers at Longitude 122 Marketing</li>
+        <li>Company owner (Mike Strickler) for business oversight</li>
+        <li>Internal team members who need access to advertising performance data</li>
+    </ul>
+    
+    <p><strong>Note:</strong> This is an internal tool. External clients (such as Anne's Advertising Agency mentioned in some documentation) will receive PDF reports generated from this tool but will not have direct access to the platform.</p>
+
+    <h2>3. Google Ads API Integration</h2>
+    
+    <div class="api-section">
+        <h3>API Services Used:</h3>
+        <table>
+            <tr>
+                <th>Service</th>
+                <th>Purpose</th>
+                <th>Endpoints Used</th>
+            </tr>
+            <tr>
+                <td><strong>Customer Resource</strong></td>
+                <td>Pull account-level performance reports</td>
+                <td>customers.get, customers.listAccessibleCustomers</td>
+            </tr>
+            <tr>
+                <td><strong>GoogleAdsService</strong></td>
+                <td>Query campaign metrics and performance data</td>
+                <td>googleAds.search, googleAds.searchStream</td>
+            </tr>
+            <tr>
+                <td><strong>Campaign Resource</strong></td>
+                <td>Retrieve campaign details and status</td>
+                <td>campaigns.get (read-only)</td>
+            </tr>
+            <tr>
+                <td><strong>Metrics</strong></td>
+                <td>Access performance metrics</td>
+                <td>impressions, clicks, conversions, cost, etc.</td>
+            </tr>
+        </table>
+    </div>
+    
+    <h3>Data Retrieved from Google Ads API:</h3>
+    <ul>
+        <li><strong>Campaign Information:</strong> Campaign ID, name, status, type, budget</li>
+        <li><strong>Performance Metrics:</strong>
+            <ul>
+                <li>Impressions</li>
+                <li>Clicks</li>
+                <li>Click-Through Rate (CTR)</li>
+                <li>Cost (Ad Spend)</li>
+                <li>Conversions</li>
+                <li>Conversion Value (Revenue)</li>
+                <li>Cost Per Click (CPC)</li>
+                <li>Cost Per Acquisition (CPA)</li>
+                <li>Return on Ad Spend (ROAS)</li>
+            </ul>
+        </li>
+        <li><strong>Time-Series Data:</strong> Daily/weekly/monthly aggregated metrics</li>
+    </ul>
+    
+    <h3>API Access Pattern:</h3>
+    <ul>
+        <li><strong>Read-Only Access:</strong> The tool only reads data from Google Ads; it does not create, modify, or delete any campaigns, ad groups, or ads</li>
+        <li><strong>Scheduled Sync:</strong> Data is synced hourly via scheduled background jobs</li>
+        <li><strong>On-Demand Sync:</strong> Users can manually trigger a data sync from the Settings page</li>
+        <li><strong>Data Storage:</strong> Synced data is cached in a secure PostgreSQL database for fast dashboard queries</li>
+    </ul>
+
+    <h2>4. Technical Architecture</h2>
+    
+    <h3>Technology Stack:</h3>
+    <table>
+        <tr>
+            <th>Component</th>
+            <th>Technology</th>
+        </tr>
+        <tr>
+            <td>Frontend</td>
+            <td>Next.js 16, React, TypeScript, Tailwind CSS</td>
+        </tr>
+        <tr>
+            <td>Backend</td>
+            <td>Next.js API Routes, Node.js</td>
+        </tr>
+        <tr>
+            <td>Database</td>
+            <td>PostgreSQL (via Supabase)</td>
+        </tr>
+        <tr>
+            <td>Authentication</td>
+            <td>Supabase Auth with OAuth 2.0</td>
+        </tr>
+        <tr>
+            <td>AI/LLM</td>
+            <td>Anthropic Claude API</td>
+        </tr>
+        <tr>
+            <td>Charts</td>
+            <td>Recharts</td>
+        </tr>
+        <tr>
+            <td>Hosting</td>
+            <td>Vercel</td>
+        </tr>
+    </table>
+    
+    <h3>Data Flow:</h3>
+    <ol>
+        <li><strong>Authentication:</strong> User authenticates via OAuth 2.0 flow with Google Ads</li>
+        <li><strong>Token Storage:</strong> Access tokens are encrypted and stored securely in the database</li>
+        <li><strong>Data Sync:</strong> Background job calls Google Ads API to fetch campaign metrics</li>
+        <li><strong>Data Storage:</strong> Metrics are stored in time-series format in PostgreSQL</li>
+        <li><strong>Dashboard Display:</strong> UI fetches data from local database for fast rendering</li>
+        <li><strong>AI Analysis:</strong> AI chatbot uses stored data to provide insights</li>
+    </ol>
+
+    <div class="page-break"></div>
+
+    <h2>5. User Interface Screenshots</h2>
+    
+    <h3>5.1 Main Dashboard</h3>
+    <p>The dashboard provides a comprehensive overview of advertising performance across all connected platforms.</p>
+    
+    <div class="screenshot">
+        <img src="design-doc-screenshots/demo-dashboard-screenshot.png" alt="Dashboard Screenshot">
+        <p class="screenshot-caption">Figure 1: Main Dashboard showing key metrics, campaign performance chart, and platform comparison</p>
+    </div>
+    
+    <p><strong>Dashboard Features:</strong></p>
+    <ul>
+        <li><strong>Connection Status:</strong> Shows which ad platforms are connected (Google Ads, Meta Ads, LinkedIn Ads)</li>
+        <li><strong>Key Metrics Cards:</strong> Total Ad Spend, Total Conversions, Average ROAS, Total Impressions</li>
+        <li><strong>Campaign Performance Chart:</strong> Line chart showing spend vs. revenue over time</li>
+        <li><strong>Platform Comparison:</strong> Bar chart comparing spend and conversions across platforms</li>
+        <li><strong>AI-Generated Insights:</strong> Automated recommendations and alerts</li>
+    </ul>
+
+    <h3>5.2 AI Marketing Assistant</h3>
+    <p>The AI chatbot allows users to ask natural language questions about their campaign data.</p>
+    
+    <div class="screenshot">
+        <img src="design-doc-screenshots/demo-ai-chat-screenshot.png" alt="AI Chat Screenshot">
+        <p class="screenshot-caption">Figure 2: AI Marketing Assistant chat interface with sample conversation</p>
+    </div>
+    
+    <p><strong>AI Chat Features:</strong></p>
+    <ul>
+        <li><strong>Natural Language Queries:</strong> Ask questions like "What were my total conversions last month?"</li>
+        <li><strong>Model Selection:</strong> Choose between different AI models (Claude Sonnet, Claude Haiku, GPT-4o)</li>
+        <li><strong>Contextual Responses:</strong> AI has access to campaign data and provides specific insights</li>
+        <li><strong>Suggested Questions:</strong> Pre-built query templates for common analytics questions</li>
+        <li><strong>Conversation History:</strong> Full chat history maintained for reference</li>
+    </ul>
+
+    <h3>5.3 Settings & Connected Accounts</h3>
+    <p>The settings page allows users to manage their ad platform connections and credentials.</p>
+    
+    <div class="screenshot">
+        <img src="design-doc-screenshots/demo-settings-screenshot.png" alt="Settings Screenshot">
+        <p class="screenshot-caption">Figure 3: Settings page showing connected Google Ads, Meta Ads, and LinkedIn Ads accounts</p>
+    </div>
+    
+    <p><strong>Settings Features:</strong></p>
+    <ul>
+        <li><strong>Profile Management:</strong> Update user name, organization, and contact information</li>
+        <li><strong>API Keys:</strong> Configure AI API keys for chatbot functionality</li>
+        <li><strong>Ad Platforms:</strong> Connect/reconnect Google Ads, Meta Ads, and LinkedIn Ads via OAuth</li>
+        <li><strong>Connected Accounts:</strong> View all connected accounts with status and last sync time</li>
+        <li><strong>Manual Sync:</strong> Trigger on-demand data synchronization</li>
+    </ul>
+
+    <h3>5.4 Login Page</h3>
+    <p>Secure authentication interface for platform access.</p>
+    
+    <div class="screenshot">
+        <img src="design-doc-screenshots/demo-login-screenshot.png" alt="Login Screenshot">
+        <p class="screenshot-caption">Figure 4: Login page for secure user authentication</p>
+    </div>
+
+    <div class="page-break"></div>
+
+    <h2>6. Security & Data Protection</h2>
+    
+    <h3>Authentication & Authorization:</h3>
+    <ul>
+        <li><strong>OAuth 2.0:</strong> Standard OAuth 2.0 flow for Google Ads API authentication</li>
+        <li><strong>Token Encryption:</strong> Access and refresh tokens are encrypted at rest using AES-256</li>
+        <li><strong>Session Management:</strong> Secure session handling via Supabase Auth</li>
+        <li><strong>Row-Level Security:</strong> Database-level isolation ensures users only see their own data</li>
+    </ul>
+    
+    <h3>Data Storage & Privacy:</h3>
+    <ul>
+        <li><strong>Data Minimization:</strong> Only necessary campaign metrics are stored</li>
+        <li><strong>Secure Database:</strong> PostgreSQL with SSL/TLS encryption in transit</li>
+        <li><strong>No PII Storage:</strong> Tool does not store end-user/customer personal information from ads</li>
+        <li><strong>HTTPS Only:</strong> All communications encrypted via TLS 1.2+</li>
+    </ul>
+    
+    <h3>Compliance:</h3>
+    <ul>
+        <li>Compliant with Google Ads API Terms of Service</li>
+        <li>Privacy policy and terms of service available at application URLs</li>
+        <li>Data retention policies aligned with business requirements</li>
+    </ul>
+
+    <h2>7. API Usage Patterns</h2>
+    
+    <h3>Rate Limiting & Quotas:</h3>
+    <ul>
+        <li>Respects Google Ads API rate limits and quotas</li>
+        <li>Implements exponential backoff for retry logic</li>
+        <li>Caches data locally to minimize API calls</li>
+        <li>Uses efficient GAQL queries to reduce data transfer</li>
+    </ul>
+    
+    <h3>Typical API Usage:</h3>
+    <table>
+        <tr>
+            <th>Operation</th>
+            <th>Frequency</th>
+            <th>Estimated Calls/Day</th>
+        </tr>
+        <tr>
+            <td>Campaign List Sync</td>
+            <td>Hourly</td>
+            <td>~24</td>
+        </tr>
+        <tr>
+            <td>Metrics Query</td>
+            <td>Hourly</td>
+            <td>~24-48</td>
+        </tr>
+        <tr>
+            <td>On-Demand Refresh</td>
+            <td>As needed</td>
+            <td>~5-10</td>
+        </tr>
+        <tr>
+            <td><strong>Total</strong></td>
+            <td></td>
+            <td><strong>~50-80 calls/day</strong></td>
+        </tr>
+    </table>
+
+    <h2>8. Future Enhancements</h2>
+    
+    <ul>
+        <li><strong>Inventory Sync:</strong> Integration with e-commerce inventory systems to automatically pause ads for out-of-stock items</li>
+        <li><strong>PDF Report Generation:</strong> Automated PDF report generation for client distribution</li>
+        <li><strong>Advanced Analytics:</strong> Cohort analysis, attribution modeling, and predictive insights</li>
+        <li><strong>Additional Platforms:</strong> Integration with TikTok Ads, Microsoft Ads, and other platforms</li>
+    </ul>
+
+    <h2>9. Contact Information</h2>
+    
+    <div class="company-info">
+        <p><strong>Company:</strong> Longitude 122 Marketing</p>
+        <p><strong>Owner:</strong> Mike Strickler</p>
+        <p><strong>Website:</strong> <a href="https://longitude122marketing.com">https://longitude122marketing.com</a></p>
+        <p><strong>Main Office:</strong> San Diego, California</p>
+        <p><strong>Additional Offices:</strong> Los Angeles, Sacramento, Napa</p>
+    </div>
+
+    <div class="footer">
+        <p>Marketing Analytics Platform - Design Documentation</p>
+        <p>Prepared for Google Ads API Access Application</p>
+        <p>© 2025 Longitude 122 Marketing. All rights reserved.</p>
+    </div>
+</body>
+</html>
+

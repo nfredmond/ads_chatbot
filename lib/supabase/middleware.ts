@@ -2,10 +2,6 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
-
   const publicRoutePrefixes = [
     '/', // marketing landing page
     '/login',
@@ -13,6 +9,7 @@ export async function updateSession(request: NextRequest) {
     '/auth',
     '/privacy-policy',
     '/terms-of-service',
+    '/demo', // demo pages for Google API documentation - NO AUTH REQUIRED
   ]
 
   const isPublicRoute = publicRoutePrefixes.some(prefix => {
@@ -24,6 +21,16 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname === prefix ||
       request.nextUrl.pathname.startsWith(`${prefix}/`)
     )
+  })
+
+  // For public routes (especially /demo), skip ALL authentication logic
+  // This ensures demo pages work even without Supabase configuration
+  if (isPublicRoute) {
+    return NextResponse.next({ request })
+  }
+
+  let supabaseResponse = NextResponse.next({
+    request,
   })
 
   const supabase = createServerClient(
@@ -55,8 +62,9 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Redirect to login if user is not authenticated and trying to access protected routes
-  if (!user && !isPublicRoute) {
+  // Redirect to login if user is not authenticated
+  // (Public routes are already handled above, so this only affects protected routes)
+  if (!user) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
