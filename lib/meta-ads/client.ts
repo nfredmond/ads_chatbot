@@ -283,3 +283,352 @@ function normalizeMetaStatus(status: string): string {
   return statusMap[status] || status.toLowerCase()
 }
 
+// ============================================
+// AD SETS (Meta's equivalent of Ad Groups)
+// ============================================
+
+export async function fetchMetaAdsAdSets(config: MetaAdsConfig) {
+  const apiVersion = config.apiVersion ?? DEFAULT_GRAPH_VERSION
+  
+  let accountId = config.accountId
+  if (!accountId.startsWith('act_')) {
+    accountId = accountId.replace(/^act_/, '')
+    accountId = `act_${accountId}`
+  }
+
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const until = new Date().toISOString().split('T')[0]
+
+  logger.info('Fetching Meta Ads ad sets', { accountId })
+
+  // Fetch ad set metadata
+  const adSetsParams = new URLSearchParams({
+    fields: 'id,name,status,daily_budget,campaign_id,targeting,optimization_goal,bid_strategy',
+    access_token: config.accessToken,
+    limit: '500',
+  })
+
+  if (config.appSecret) {
+    const appsecretProof = generateAppsecretProof(config.accessToken, config.appSecret)
+    adSetsParams.set('appsecret_proof', appsecretProof)
+  }
+
+  const adSetsUrl = `https://graph.facebook.com/${apiVersion}/${accountId}/adsets?${adSetsParams.toString()}`
+  
+  const adSetMetadata = await withRateLimit('meta_ads', async () => {
+    return await fetchAllPages<{
+      id: string
+      name: string
+      status: string
+      daily_budget?: string
+      campaign_id: string
+      targeting?: any
+      optimization_goal?: string
+      bid_strategy?: string
+    }>(adSetsUrl)
+  })
+
+  // Fetch ad set level insights
+  const insightsParams = new URLSearchParams({
+    fields: 'adset_id,adset_name,impressions,clicks,spend,actions,action_values,date_start,date_stop',
+    level: 'adset',
+    time_range: JSON.stringify({ since, until }),
+    access_token: config.accessToken,
+    limit: '500',
+  })
+
+  if (config.appSecret) {
+    const appsecretProof = generateAppsecretProof(config.accessToken, config.appSecret)
+    insightsParams.set('appsecret_proof', appsecretProof)
+  }
+
+  const insightsUrl = `https://graph.facebook.com/${apiVersion}/${accountId}/insights?${insightsParams.toString()}`
+  
+  const insightsData = await withRateLimit('meta_ads', async () => {
+    return await fetchAllPages<{
+      adset_id: string
+      adset_name: string
+      impressions?: string
+      clicks?: string
+      spend?: string
+      actions?: Array<{ action_type: string; value: string }>
+      action_values?: Array<{ action_type: string; value: string }>
+      date_start?: string
+      date_stop?: string
+    }>(insightsUrl)
+  })
+
+  logAPISuccess('meta_ads', 'fetchAdSets', {
+    adSetCount: adSetMetadata.length,
+    insightsCount: insightsData.length,
+  })
+
+  return { adSetMetadata, insightsData, dateRange: { since, until } }
+}
+
+export function transformMetaAdsAdSetData(apiData: {
+  adSetMetadata: Array<{
+    id: string
+    name: string
+    status: string
+    daily_budget?: string
+    campaign_id: string
+    targeting?: any
+    optimization_goal?: string
+    bid_strategy?: string
+  }>
+  insightsData: Array<{
+    adset_id: string
+    adset_name: string
+    impressions?: string
+    clicks?: string
+    spend?: string
+    actions?: Array<{ action_type: string; value: string }>
+    action_values?: Array<{ action_type: string; value: string }>
+    date_start?: string
+    date_stop?: string
+  }>
+  dateRange: { since: string; until: string }
+}) {
+  const adSets: any[] = []
+  const metrics: any[] = []
+
+  const seenAdSets = new Set<string>()
+
+  // Create ad sets from metadata
+  for (const adSet of apiData.adSetMetadata) {
+    if (!seenAdSets.has(adSet.id)) {
+      adSets.push({
+        ad_group_id: adSet.id,
+        ad_group_name: adSet.name,
+        campaign_api_id: adSet.campaign_id,
+        platform: 'meta_ads',
+        status: normalizeMetaStatus(adSet.status),
+        ad_group_type: adSet.optimization_goal || null,
+        cpc_bid_micros: null,
+        target_cpa_micros: null,
+        metadata: {
+          targeting: adSet.targeting,
+          bid_strategy: adSet.bid_strategy,
+          daily_budget: adSet.daily_budget,
+        },
+      })
+      seenAdSets.add(adSet.id)
+    }
+  }
+
+  // Create metrics from insights
+  for (const insight of apiData.insightsData) {
+    const purchaseAction = insight.actions?.find(
+      (action) => action.action_type === 'offsite_conversion.fb_pixel_purchase' || 
+                 action.action_type === 'purchase'
+    )
+    const revenueAction = insight.action_values?.find(
+      (action) => action.action_type === 'offsite_conversion.fb_pixel_purchase' ||
+                 action.action_type === 'purchase'
+    )
+
+    metrics.push({
+      ad_group_api_id: insight.adset_id,
+      date: insight.date_stop || apiData.dateRange.until,
+      impressions: insight.impressions ? parseInt(insight.impressions, 10) : 0,
+      clicks: insight.clicks ? parseInt(insight.clicks, 10) : 0,
+      conversions: purchaseAction ? parseFloat(purchaseAction.value) : 0,
+      spend: insight.spend ? parseFloat(insight.spend) : 0,
+      revenue: revenueAction ? parseFloat(revenueAction.value) : 0,
+    })
+  }
+
+  return { adSets, metrics }
+}
+
+// ============================================
+// INDIVIDUAL ADS
+// ============================================
+
+export async function fetchMetaAdsAds(config: MetaAdsConfig) {
+  const apiVersion = config.apiVersion ?? DEFAULT_GRAPH_VERSION
+  
+  let accountId = config.accountId
+  if (!accountId.startsWith('act_')) {
+    accountId = accountId.replace(/^act_/, '')
+    accountId = `act_${accountId}`
+  }
+
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const until = new Date().toISOString().split('T')[0]
+
+  logger.info('Fetching Meta Ads individual ads', { accountId })
+
+  // Fetch ad metadata with creative details
+  const adsParams = new URLSearchParams({
+    fields: 'id,name,status,adset_id,creative{id,title,body,object_story_spec,effective_object_story_id,thumbnail_url,image_url}',
+    access_token: config.accessToken,
+    limit: '500',
+  })
+
+  if (config.appSecret) {
+    const appsecretProof = generateAppsecretProof(config.accessToken, config.appSecret)
+    adsParams.set('appsecret_proof', appsecretProof)
+  }
+
+  const adsUrl = `https://graph.facebook.com/${apiVersion}/${accountId}/ads?${adsParams.toString()}`
+  
+  const adMetadata = await withRateLimit('meta_ads', async () => {
+    return await fetchAllPages<{
+      id: string
+      name: string
+      status: string
+      adset_id: string
+      creative?: {
+        id: string
+        title?: string
+        body?: string
+        object_story_spec?: any
+        thumbnail_url?: string
+        image_url?: string
+      }
+    }>(adsUrl)
+  })
+
+  // Fetch ad level insights
+  const insightsParams = new URLSearchParams({
+    fields: 'ad_id,ad_name,impressions,clicks,spend,actions,action_values,date_start,date_stop',
+    level: 'ad',
+    time_range: JSON.stringify({ since, until }),
+    access_token: config.accessToken,
+    limit: '500',
+  })
+
+  if (config.appSecret) {
+    const appsecretProof = generateAppsecretProof(config.accessToken, config.appSecret)
+    insightsParams.set('appsecret_proof', appsecretProof)
+  }
+
+  const insightsUrl = `https://graph.facebook.com/${apiVersion}/${accountId}/insights?${insightsParams.toString()}`
+  
+  const insightsData = await withRateLimit('meta_ads', async () => {
+    return await fetchAllPages<{
+      ad_id: string
+      ad_name: string
+      impressions?: string
+      clicks?: string
+      spend?: string
+      actions?: Array<{ action_type: string; value: string }>
+      action_values?: Array<{ action_type: string; value: string }>
+      date_start?: string
+      date_stop?: string
+    }>(insightsUrl)
+  })
+
+  logAPISuccess('meta_ads', 'fetchAds', {
+    adCount: adMetadata.length,
+    insightsCount: insightsData.length,
+  })
+
+  return { adMetadata, insightsData, dateRange: { since, until } }
+}
+
+export function transformMetaAdsAdData(apiData: {
+  adMetadata: Array<{
+    id: string
+    name: string
+    status: string
+    adset_id: string
+    creative?: {
+      id: string
+      title?: string
+      body?: string
+      object_story_spec?: any
+      thumbnail_url?: string
+      image_url?: string
+    }
+  }>
+  insightsData: Array<{
+    ad_id: string
+    ad_name: string
+    impressions?: string
+    clicks?: string
+    spend?: string
+    actions?: Array<{ action_type: string; value: string }>
+    action_values?: Array<{ action_type: string; value: string }>
+    date_start?: string
+    date_stop?: string
+  }>
+  dateRange: { since: string; until: string }
+}) {
+  const ads: any[] = []
+  const metrics: any[] = []
+
+  const seenAds = new Set<string>()
+
+  // Create ads from metadata
+  for (const ad of apiData.adMetadata) {
+    if (!seenAds.has(ad.id)) {
+      // Extract headline and description from creative
+      const creative = ad.creative
+      let headlines: string[] = []
+      let descriptions: string[] = []
+      
+      if (creative?.title) {
+        headlines.push(creative.title)
+      }
+      if (creative?.body) {
+        descriptions.push(creative.body)
+      }
+      
+      // Try to extract from object_story_spec if available
+      const storySpec = creative?.object_story_spec
+      if (storySpec?.link_data) {
+        if (storySpec.link_data.message) descriptions.push(storySpec.link_data.message)
+        if (storySpec.link_data.name) headlines.push(storySpec.link_data.name)
+        if (storySpec.link_data.description) descriptions.push(storySpec.link_data.description)
+      }
+
+      ads.push({
+        ad_id: ad.id,
+        ad_name: ad.name,
+        ad_group_api_id: ad.adset_id,
+        platform: 'meta_ads',
+        ad_type: 'FACEBOOK_AD',
+        status: normalizeMetaStatus(ad.status),
+        approval_status: 'APPROVED', // Meta doesn't have separate approval status like Google
+        headlines: headlines.length > 0 ? headlines : null,
+        descriptions: descriptions.length > 0 ? descriptions : null,
+        final_urls: storySpec?.link_data?.link ? [storySpec.link_data.link] : null,
+        display_url: null,
+        metadata: {
+          creative_id: creative?.id,
+          thumbnail_url: creative?.thumbnail_url,
+          image_url: creative?.image_url,
+        },
+      })
+      seenAds.add(ad.id)
+    }
+  }
+
+  // Create metrics from insights
+  for (const insight of apiData.insightsData) {
+    const purchaseAction = insight.actions?.find(
+      (action) => action.action_type === 'offsite_conversion.fb_pixel_purchase' || 
+                 action.action_type === 'purchase'
+    )
+    const revenueAction = insight.action_values?.find(
+      (action) => action.action_type === 'offsite_conversion.fb_pixel_purchase' ||
+                 action.action_type === 'purchase'
+    )
+
+    metrics.push({
+      ad_api_id: insight.ad_id,
+      date: insight.date_stop || apiData.dateRange.until,
+      impressions: insight.impressions ? parseInt(insight.impressions, 10) : 0,
+      clicks: insight.clicks ? parseInt(insight.clicks, 10) : 0,
+      conversions: purchaseAction ? parseFloat(purchaseAction.value) : 0,
+      spend: insight.spend ? parseFloat(insight.spend) : 0,
+      revenue: revenueAction ? parseFloat(revenueAction.value) : 0,
+    })
+  }
+
+  return { ads, metrics }
+}
+

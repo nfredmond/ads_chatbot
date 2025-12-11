@@ -58,151 +58,14 @@ export async function getGoogleAdsAccessToken(
   }
 }
 
-/**
- * List accessible customer accounts (for manager accounts)
- */
-async function listAccessibleCustomers(
-  accessToken: string,
-  developerToken: string
-): Promise<string[]> {
-  const endpoint = 'https://googleads.googleapis.com/v21/customers:listAccessibleCustomers'
-  
-  const response = await fetch(endpoint, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-      'developer-token': developerToken,
-    },
-  })
-
-  const data = await response.json()
-
-  if (!response.ok) {
-    console.error('Failed to list accessible customers:', JSON.stringify(data, null, 2))
-    return []
+export async function fetchGoogleAdsCampaigns(config: GoogleAdsConfig) {
+  if (!config.refreshToken) {
+    throw new Error('Missing refresh token for Google Ads OAuth flow')
   }
 
-  // Extract customer IDs from resource names like "customers/1234567890"
-  const customerIds = (data.resourceNames || []).map((name: string) => 
-    name.replace('customers/', '')
-  )
-  
-  logger.info('Found accessible customer accounts', { count: customerIds.length, customerIds })
-  return customerIds
-}
+  logger.info('Fetching Google Ads campaigns', { customerId: config.customerId })
 
-export interface ClientAccount {
-  id: string
-  name: string
-}
-
-/**
- * List client accounts under a manager account using CustomerClient resource
- */
-async function listClientAccounts(
-  managerCustomerId: string,
-  accessToken: string,
-  developerToken: string
-): Promise<ClientAccount[]> {
-  const query = `
-    SELECT 
-      customer_client.client_customer,
-      customer_client.level,
-      customer_client.manager,
-      customer_client.status,
-      customer_client.descriptive_name
-    FROM customer_client
-    WHERE customer_client.level = 1
-      AND customer_client.status = 'ENABLED'
-  `
-  
-  const endpoint = `https://googleads.googleapis.com/v21/customers/${managerCustomerId}/googleAds:search`
-  
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-      'developer-token': developerToken,
-      'login-customer-id': managerCustomerId,
-    },
-    body: JSON.stringify({ query }),
-  })
-
-  const data = await response.json()
-
-  if (!response.ok) {
-    console.error('Failed to list client accounts:', JSON.stringify(data, null, 2))
-    return []
-  }
-
-  const clients: ClientAccount[] = []
-  const rows = data.results || []
-  
-  for (const row of rows) {
-    const clientCustomer = row?.customerClient?.clientCustomer
-    const isManager = row?.customerClient?.manager === true
-    const name = row?.customerClient?.descriptiveName || 'Unknown'
-    
-    if (clientCustomer && !isManager) {
-      // Extract customer ID from resource name like "customers/1234567890"
-      const clientId = clientCustomer.replace('customers/', '')
-      clients.push({ id: clientId, name })
-      logger.info(`Found client account: ${name} (${clientId})`)
-    }
-  }
-  
-  logger.info('Found client accounts under manager', { count: clients.length })
-  return clients
-}
-
-/**
- * Check if a customer ID is a manager account
- */
-async function isManagerAccount(
-  customerId: string,
-  accessToken: string,
-  developerToken: string,
-  loginCustomerId?: string
-): Promise<boolean> {
-  const query = `SELECT customer.manager FROM customer WHERE customer.id = ${customerId}`
-  const endpoint = `https://googleads.googleapis.com/v21/customers/${customerId}/googleAds:search`
-  
-  try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-        'developer-token': developerToken,
-        ...(loginCustomerId ? { 'login-customer-id': loginCustomerId } : {}),
-      },
-      body: JSON.stringify({ query }),
-    })
-
-    const data = await response.json()
-    
-    if (!response.ok) {
-      return false
-    }
-
-    const isManager = data.results?.[0]?.customer?.manager === true
-    return isManager
-  } catch {
-    return false
-  }
-}
-
-/**
- * Fetch campaigns from a single customer account
- */
-async function fetchCampaignsFromCustomer(
-  customerId: string,
-  accessToken: string,
-  developerToken: string,
-  loginCustomerId?: string
-): Promise<any> {
+  // Google Ads API uses GAQL (Google Ads Query Language)
   const query = `
     SELECT
       campaign.id,
@@ -222,127 +85,46 @@ async function fetchCampaignsFromCustomer(
     ORDER BY metrics.clicks DESC
   `
 
-  const endpoint = `https://googleads.googleapis.com/v21/customers/${customerId}/googleAds:search`
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-      'developer-token': developerToken,
-      ...(loginCustomerId ? { 'login-customer-id': loginCustomerId } : {}),
-    },
-    body: JSON.stringify({ query }),
-  })
-
-  const responseData = await response.json()
-
-  if (!response.ok) {
-    const errorDetails = responseData.error?.details?.[0]?.errors?.[0] || responseData.error
-    const errorMessage = errorDetails?.message || responseData.error?.message || 'Unknown error'
-    const errorCode = errorDetails?.errorCode
-    
-    // If this is a manager account error, return empty results (we'll handle it in the parent)
-    if (errorCode?.queryError === 'REQUESTED_METRICS_FOR_MANAGER') {
-      logger.info(`Skipping manager account ${customerId}`)
-      return { results: [], isManager: true }
-    }
-    
-    console.error(`Error fetching from customer ${customerId}:`, errorMessage)
-    return { results: [], error: errorMessage }
-  }
-
-  return responseData
-}
-
-export async function fetchGoogleAdsCampaigns(config: GoogleAdsConfig) {
-  if (!config.refreshToken) {
-    throw new Error('Missing refresh token for Google Ads OAuth flow')
-  }
-
-  // Google Ads API requires customer ID without dashes
-  const customerId = config.customerId.replace(/-/g, '')
-  const loginCustomerId = config.loginCustomerId?.replace(/-/g, '') || customerId
-  
-  logger.info('Fetching Google Ads campaigns', { customerId, loginCustomerId })
-
   const accessToken = await getGoogleAdsAccessToken(
     config.clientId,
     config.clientSecret,
     config.refreshToken
   )
 
-  // First, try to fetch directly from the provided customer ID
-  const directResult = await withRateLimit('google_ads', async () => {
-    return fetchCampaignsFromCustomer(customerId, accessToken, config.developerToken, loginCustomerId)
+  const endpoint = `https://googleads.googleapis.com/v21/customers/${config.customerId}/googleAds:search`
+
+  const data = await withRateLimit('google_ads', async () => {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+        'developer-token': config.developerToken,
+        ...(config.loginCustomerId ? { 'login-customer-id': config.loginCustomerId } : {}),
+      },
+      body: JSON.stringify({ query, pageSize: 1000 }),
+    })
+
+    const responseData = await response.json()
+
+    if (!response.ok) {
+      const error = responseData.error?.message || 'Unknown Google Ads API error'
+      throw new PlatformAPIError(
+        'google_ads',
+        'fetchCampaigns',
+        new Error(error),
+        response.status,
+        responseData.error?.code?.toString()
+      )
+    }
+
+    return responseData
   })
 
-  // If it's not a manager account and we got results, return them
-  if (!directResult.isManager && directResult.results?.length > 0) {
-    const resultCount = directResult.results.length
-    logAPISuccess('google_ads', 'fetchCampaigns', { resultCount, customerId })
-    return directResult
-  }
+  const resultCount = Array.isArray(data?.results) ? data.results.length : 0
+  logAPISuccess('google_ads', 'fetchCampaigns', { resultCount })
 
-  // If it's a manager account, we need to list client accounts and fetch from each
-  if (directResult.isManager) {
-    logger.info('Detected manager account, listing client accounts...')
-    
-    // Use the CustomerClient resource to get linked accounts (more reliable than listAccessibleCustomers)
-    let clientAccounts = await listClientAccounts(customerId, accessToken, config.developerToken)
-    
-    // Fallback to listAccessibleCustomers if no clients found
-    if (clientAccounts.length === 0) {
-      logger.info('No clients from CustomerClient, trying listAccessibleCustomers...')
-      const accessibleCustomers = await listAccessibleCustomers(accessToken, config.developerToken)
-      clientAccounts = accessibleCustomers
-        .filter(id => id !== customerId)
-        .map(id => ({ id, name: `Account ${id}` }))
-    }
-    
-    if (clientAccounts.length === 0) {
-      logger.warn('No client accounts found under manager account')
-      return { results: [], clientAccounts: [] }
-    }
-
-    logger.info(`Found ${clientAccounts.length} client accounts, fetching campaigns...`)
-
-    // Fetch campaigns from each client account
-    const allResults: any[] = []
-    
-    for (const client of clientAccounts) {
-      try {
-        const clientResult = await fetchCampaignsFromCustomer(
-          client.id, 
-          accessToken, 
-          config.developerToken,
-          loginCustomerId
-        )
-        
-        if (clientResult.results && !clientResult.isManager) {
-          // Add client ID and name to each result for tracking
-          const resultsWithClient = clientResult.results.map((r: any) => ({
-            ...r,
-            _clientCustomerId: client.id,
-            _clientCustomerName: client.name
-          }))
-          allResults.push(...resultsWithClient)
-          logger.info(`Fetched ${clientResult.results.length} campaign records from client ${client.id}`)
-        }
-      } catch (err: any) {
-        logger.warn(`Failed to fetch from client ${client.id}: ${err.message}`)
-      }
-    }
-
-    const resultCount = allResults.length
-    logAPISuccess('google_ads', 'fetchCampaigns', { resultCount, clientAccounts: clientAccounts.length })
-    
-    return { results: allResults, clientAccounts }
-  }
-
-  // No results found
-  logger.info('No Google Ads campaigns found')
-  return { results: [] }
+  return data
 }
 
 export function transformGoogleAdsData(apiData: any) {
@@ -360,8 +142,6 @@ export function transformGoogleAdsData(apiData: any) {
     }
 
     const campaignId = campaign.id.toString()
-    const customerId = row?._clientCustomerId || null
-    const customerName = row?._clientCustomerName || null
 
     if (!campaignMap.has(campaignId)) {
       const budgetMicros = row?.campaignBudget?.amountMicros
@@ -372,8 +152,6 @@ export function transformGoogleAdsData(apiData: any) {
         platform: 'google_ads',
         status: normalizeGoogleStatus(campaign.status),
         budget_amount: budgetMicros ? Number(budgetMicros) / 1_000_000 : null,
-        customer_id: customerId,
-        customer_name: customerName,
       })
     }
 
@@ -395,10 +173,7 @@ export function transformGoogleAdsData(apiData: any) {
 
   campaigns.push(...campaignMap.values())
 
-  // Extract unique customers from the client accounts
-  const customers = apiData?.clientAccounts || []
-
-  return { campaigns, metrics, customers }
+  return { campaigns, metrics }
 }
 
 function normalizeGoogleStatus(status: string): string {
@@ -409,3 +184,252 @@ function normalizeGoogleStatus(status: string): string {
   }
   return statusMap[status] || status.toLowerCase()
 }
+
+// ============================================
+// AD GROUPS FETCHING
+// ============================================
+
+export async function fetchGoogleAdsAdGroups(config: GoogleAdsConfig) {
+  if (!config.refreshToken) {
+    throw new Error('Missing refresh token for Google Ads OAuth flow')
+  }
+
+  logger.info('Fetching Google Ads ad groups', { customerId: config.customerId })
+
+  const query = `
+    SELECT
+      ad_group.id,
+      ad_group.name,
+      ad_group.status,
+      ad_group.type,
+      ad_group.cpc_bid_micros,
+      ad_group.target_cpa_micros,
+      campaign.id,
+      metrics.impressions,
+      metrics.clicks,
+      metrics.conversions,
+      metrics.conversions_value,
+      metrics.cost_micros,
+      segments.date
+    FROM ad_group
+    WHERE segments.date DURING LAST_30_DAYS
+    ORDER BY metrics.impressions DESC
+  `
+
+  const accessToken = await getGoogleAdsAccessToken(
+    config.clientId,
+    config.clientSecret,
+    config.refreshToken
+  )
+
+  const endpoint = `https://googleads.googleapis.com/v21/customers/${config.customerId}/googleAds:search`
+
+  const data = await withRateLimit('google_ads', async () => {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+        'developer-token': config.developerToken,
+        ...(config.loginCustomerId ? { 'login-customer-id': config.loginCustomerId } : {}),
+      },
+      body: JSON.stringify({ query, pageSize: 10000 }),
+    })
+
+    const responseData = await response.json()
+
+    if (!response.ok) {
+      const error = responseData.error?.message || 'Unknown Google Ads API error'
+      throw new PlatformAPIError(
+        'google_ads',
+        'fetchAdGroups',
+        new Error(error),
+        response.status,
+        responseData.error?.code?.toString()
+      )
+    }
+
+    return responseData
+  })
+
+  const resultCount = Array.isArray(data?.results) ? data.results.length : 0
+  logAPISuccess('google_ads', 'fetchAdGroups', { resultCount })
+
+  return data
+}
+
+export function transformGoogleAdsAdGroupData(apiData: any) {
+  const adGroups: any[] = []
+  const metrics: any[] = []
+
+  const adGroupMap = new Map<string, any>()
+  const rows = Array.isArray(apiData?.results) ? apiData.results : []
+
+  rows.forEach((row: any) => {
+    const adGroup = row?.adGroup
+    if (!adGroup?.id) return
+
+    const adGroupId = adGroup.id.toString()
+    const campaignId = row?.campaign?.id?.toString()
+
+    if (!adGroupMap.has(adGroupId)) {
+      adGroupMap.set(adGroupId, {
+        ad_group_id: adGroupId,
+        ad_group_name: adGroup.name,
+        campaign_api_id: campaignId,
+        platform: 'google_ads',
+        status: normalizeGoogleStatus(adGroup.status || 'UNKNOWN'),
+        ad_group_type: adGroup.type,
+        cpc_bid_micros: adGroup.cpcBidMicros ? Number(adGroup.cpcBidMicros) : null,
+        target_cpa_micros: adGroup.targetCpaMicros ? Number(adGroup.targetCpaMicros) : null,
+      })
+    }
+
+    const adGroupMetrics = row?.metrics ?? {}
+    const segments = row?.segments ?? {}
+
+    metrics.push({
+      ad_group_api_id: adGroupId,
+      date: segments.date || new Date().toISOString().split('T')[0],
+      impressions: adGroupMetrics.impressions ? Number(adGroupMetrics.impressions) : 0,
+      clicks: adGroupMetrics.clicks ? Number(adGroupMetrics.clicks) : 0,
+      conversions: adGroupMetrics.conversions ? Number(adGroupMetrics.conversions) : 0,
+      spend: adGroupMetrics.costMicros ? Number(adGroupMetrics.costMicros) / 1_000_000 : 0,
+      revenue: adGroupMetrics.conversionsValue ? Number(adGroupMetrics.conversionsValue) : 0,
+    })
+  })
+
+  adGroups.push(...adGroupMap.values())
+  return { adGroups, metrics }
+}
+
+// ============================================
+// ADS FETCHING
+// ============================================
+
+export async function fetchGoogleAdsAds(config: GoogleAdsConfig) {
+  if (!config.refreshToken) {
+    throw new Error('Missing refresh token for Google Ads OAuth flow')
+  }
+
+  logger.info('Fetching Google Ads ads', { customerId: config.customerId })
+
+  const query = `
+    SELECT
+      ad_group_ad.ad.id,
+      ad_group_ad.ad.name,
+      ad_group_ad.ad.type,
+      ad_group_ad.status,
+      ad_group_ad.policy_summary.approval_status,
+      ad_group_ad.ad.responsive_search_ad.headlines,
+      ad_group_ad.ad.responsive_search_ad.descriptions,
+      ad_group_ad.ad.final_urls,
+      ad_group_ad.ad.display_url,
+      ad_group.id,
+      metrics.impressions,
+      metrics.clicks,
+      metrics.conversions,
+      metrics.conversions_value,
+      metrics.cost_micros,
+      segments.date
+    FROM ad_group_ad
+    WHERE segments.date DURING LAST_30_DAYS
+    ORDER BY metrics.impressions DESC
+  `
+
+  const accessToken = await getGoogleAdsAccessToken(
+    config.clientId,
+    config.clientSecret,
+    config.refreshToken
+  )
+
+  const endpoint = `https://googleads.googleapis.com/v21/customers/${config.customerId}/googleAds:search`
+
+  const data = await withRateLimit('google_ads', async () => {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+        'developer-token': config.developerToken,
+        ...(config.loginCustomerId ? { 'login-customer-id': config.loginCustomerId } : {}),
+      },
+      body: JSON.stringify({ query, pageSize: 10000 }),
+    })
+
+    const responseData = await response.json()
+
+    if (!response.ok) {
+      const error = responseData.error?.message || 'Unknown Google Ads API error'
+      throw new PlatformAPIError(
+        'google_ads',
+        'fetchAds',
+        new Error(error),
+        response.status,
+        responseData.error?.code?.toString()
+      )
+    }
+
+    return responseData
+  })
+
+  const resultCount = Array.isArray(data?.results) ? data.results.length : 0
+  logAPISuccess('google_ads', 'fetchAds', { resultCount })
+
+  return data
+}
+
+export function transformGoogleAdsAdData(apiData: any) {
+  const ads: any[] = []
+  const metrics: any[] = []
+
+  const adMap = new Map<string, any>()
+  const rows = Array.isArray(apiData?.results) ? apiData.results : []
+
+  rows.forEach((row: any) => {
+    const adGroupAd = row?.adGroupAd
+    const ad = adGroupAd?.ad
+    if (!ad?.id) return
+
+    const adId = ad.id.toString()
+    const adGroupId = row?.adGroup?.id?.toString()
+
+    if (!adMap.has(adId)) {
+      // Extract headlines and descriptions from responsive search ad
+      const rsa = ad.responsiveSearchAd
+      const headlines = rsa?.headlines?.map((h: any) => h.text) || []
+      const descriptions = rsa?.descriptions?.map((d: any) => d.text) || []
+
+      adMap.set(adId, {
+        ad_id: adId,
+        ad_name: ad.name || `Ad ${adId}`,
+        ad_group_api_id: adGroupId,
+        platform: 'google_ads',
+        ad_type: ad.type,
+        status: normalizeGoogleStatus(adGroupAd.status || 'UNKNOWN'),
+        approval_status: adGroupAd.policySummary?.approvalStatus || 'UNKNOWN',
+        headlines: headlines.length > 0 ? headlines : null,
+        descriptions: descriptions.length > 0 ? descriptions : null,
+        final_urls: ad.finalUrls || null,
+        display_url: ad.displayUrl || null,
+      })
+    }
+
+    const adMetrics = row?.metrics ?? {}
+    const segments = row?.segments ?? {}
+
+    metrics.push({
+      ad_api_id: adId,
+      date: segments.date || new Date().toISOString().split('T')[0],
+      impressions: adMetrics.impressions ? Number(adMetrics.impressions) : 0,
+      clicks: adMetrics.clicks ? Number(adMetrics.clicks) : 0,
+      conversions: adMetrics.conversions ? Number(adMetrics.conversions) : 0,
+      spend: adMetrics.costMicros ? Number(adMetrics.costMicros) / 1_000_000 : 0,
+      revenue: adMetrics.conversionsValue ? Number(adMetrics.conversionsValue) : 0,
+    })
+  })
+
+  ads.push(...adMap.values())
+  return { ads, metrics }
+}
+

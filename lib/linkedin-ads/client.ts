@@ -333,3 +333,230 @@ function normalizeLinkedInStatus(status: string): string {
   return statusMap[status] || status.toLowerCase()
 }
 
+// ============================================
+// CREATIVES (Individual Ads)
+// ============================================
+
+export async function fetchLinkedInCreatives(config: LinkedInAdsConfig, campaignIds: string[]) {
+  const apiVersion = config.apiVersion ?? DEFAULT_API_VERSION
+  const headers = getLinkedInHeaders(config.accessToken, apiVersion)
+
+  logger.info('Fetching LinkedIn Ads creatives', { campaignCount: campaignIds.length })
+
+  if (!config.accessToken) {
+    throw new Error('LinkedIn Ads access token is required')
+  }
+
+  if (campaignIds.length === 0) {
+    return []
+  }
+
+  // Fetch creatives for campaigns
+  // LinkedIn creatives are linked to campaigns, not ad groups
+  const campaignUrns = campaignIds.map(id => 
+    id.startsWith('urn:li:sponsoredCampaign:') ? id : `urn:li:sponsoredCampaign:${id}`
+  )
+
+  const creativesUrl = `${LINKEDIN_API_BASE}/rest/creatives?q=search&search=(campaigns:List(${campaignUrns.join(',')}))&count=500`
+  
+  const creativesData = await withRateLimit('linkedin_ads', async () => {
+    try {
+      const creativesResponse = await fetch(creativesUrl, {
+        method: 'GET',
+        headers: {
+          ...headers,
+          'X-RestLi-Method': 'finder',
+        },
+      })
+
+      if (!creativesResponse.ok) {
+        const errorText = await creativesResponse.text()
+        let error: any = {}
+        try {
+          error = JSON.parse(errorText)
+        } catch {
+          error = { message: errorText || creativesResponse.statusText }
+        }
+
+        const errorMessage = error.message || error.error_description || creativesResponse.statusText
+
+        if (creativesResponse.status === 401 || creativesResponse.status === 403) {
+          throw new PlatformAPIError(
+            'linkedin_ads',
+            'fetchCreatives',
+            new Error('Access token expired or invalid. Please reconnect your LinkedIn Ads account.'),
+            creativesResponse.status,
+            error.code?.toString()
+          )
+        }
+
+        if (creativesResponse.status === 429) {
+          throw new PlatformAPIError(
+            'linkedin_ads',
+            'fetchCreatives',
+            new Error('Rate limit exceeded.'),
+            creativesResponse.status,
+            error.code?.toString()
+          )
+        }
+
+        throw new PlatformAPIError(
+          'linkedin_ads',
+          'fetchCreatives',
+          new Error(errorMessage),
+          creativesResponse.status,
+          error.code?.toString()
+        )
+      }
+
+      return await creativesResponse.json()
+    } catch (error: any) {
+      if (error instanceof PlatformAPIError) {
+        throw error
+      }
+      throw new PlatformAPIError(
+        'linkedin_ads',
+        'fetchCreatives',
+        error,
+        undefined,
+        undefined
+      )
+    }
+  })
+
+  if (!creativesData.elements || creativesData.elements.length === 0) {
+    logger.info('No LinkedIn creatives found')
+    return []
+  }
+
+  // Fetch analytics for creatives
+  const dateRange = getDateRange()
+  const creativeIds = creativesData.elements.map((c: any) => c.id)
+
+  let analyticsData = { elements: [] }
+  try {
+    const analyticsParams = new URLSearchParams({
+      q: 'analytics',
+      pivot: 'CREATIVE',
+      dateRange: JSON.stringify(dateRange),
+      creatives: `List(${creativeIds.join(',')})`,
+      fields: 'impressions,clicks,costInLocalCurrency,externalWebsiteConversions,conversionValueInLocalCurrency',
+    })
+
+    const analyticsUrl = `${LINKEDIN_API_BASE}/rest/adAnalytics?${analyticsParams.toString()}`
+    
+    const analyticsResponse = await withRateLimit('linkedin_ads', async () => {
+      const response = await fetch(analyticsUrl, {
+        method: 'GET',
+        headers: {
+          ...headers,
+          'X-RestLi-Method': 'finder',
+        },
+      })
+
+      if (response.ok) {
+        return await response.json()
+      }
+      
+      logger.warn('LinkedIn creative analytics fetch failed', { status: response.status })
+      return { elements: [] }
+    })
+
+    analyticsData = analyticsResponse
+  } catch (error: any) {
+    logger.warn('LinkedIn creative analytics error', { error: error.message })
+  }
+
+  // Map analytics to creatives
+  const analyticsMap = new Map(
+    analyticsData.elements?.map((a: any) => [a.pivotValues?.[0], a]) || []
+  )
+
+  const creativesWithMetrics = creativesData.elements.map((creative: any) => ({
+    ...creative,
+    analytics: analyticsMap.get(creative.id) || null,
+  }))
+
+  logAPISuccess('linkedin_ads', 'fetchCreatives', {
+    creativeCount: creativesWithMetrics.length,
+    withAnalytics: creativesWithMetrics.filter((c: any) => c.analytics).length,
+  })
+
+  return creativesWithMetrics
+}
+
+export function transformLinkedInCreativeData(apiData: any[], campaignIdMap: Map<string, string>) {
+  const creatives: any[] = []
+  const metrics: any[] = []
+
+  apiData.forEach((creative: any) => {
+    // Extract campaign ID from the creative's campaign URN
+    const campaignUrn = creative.campaign
+    const campaignApiId = campaignUrn?.replace('urn:li:sponsoredCampaign:', '') || null
+    
+    // Get the database campaign ID
+    const dbCampaignId = campaignApiId ? campaignIdMap.get(campaignApiId) : null
+
+    // Extract content from creative
+    let headlines: string[] = []
+    let descriptions: string[] = []
+    let finalUrls: string[] = []
+
+    // LinkedIn creative content structure varies by type
+    const content = creative.content
+    if (content) {
+      // Text ads
+      if (content.textAd) {
+        if (content.textAd.headline) headlines.push(content.textAd.headline)
+        if (content.textAd.text) descriptions.push(content.textAd.text)
+      }
+      // Sponsored content
+      if (content.sponsored) {
+        if (content.sponsored.title) headlines.push(content.sponsored.title)
+        if (content.sponsored.description) descriptions.push(content.sponsored.description)
+        if (content.sponsored.landingPage) finalUrls.push(content.sponsored.landingPage)
+      }
+      // Direct sponsored content
+      if (content.reference) {
+        // This is a reference to an existing post
+        descriptions.push('Sponsored Post')
+      }
+    }
+
+    // For LinkedIn, we create a pseudo "ad group" per campaign since LinkedIn
+    // doesn't have a true ad group level - creatives link directly to campaigns
+    creatives.push({
+      ad_id: creative.id.toString(),
+      ad_name: headlines[0] || `Creative ${creative.id}`,
+      campaign_api_id: campaignApiId,
+      db_campaign_id: dbCampaignId,
+      platform: 'linkedin_ads',
+      ad_type: creative.type || 'SPONSORED_CONTENT',
+      status: normalizeLinkedInStatus(creative.status || 'ACTIVE'),
+      approval_status: creative.review?.status || 'APPROVED',
+      headlines: headlines.length > 0 ? headlines : null,
+      descriptions: descriptions.length > 0 ? descriptions : null,
+      final_urls: finalUrls.length > 0 ? finalUrls : null,
+      display_url: null,
+      metadata: {
+        creative_type: creative.type,
+        intendedStatus: creative.intendedStatus,
+      },
+    })
+
+    if (creative.analytics) {
+      metrics.push({
+        ad_api_id: creative.id.toString(),
+        date: new Date().toISOString().split('T')[0],
+        impressions: parseInt(creative.analytics.impressions) || 0,
+        clicks: parseInt(creative.analytics.clicks) || 0,
+        conversions: parseFloat(creative.analytics.externalWebsiteConversions) || 0,
+        spend: parseFloat(creative.analytics.costInLocalCurrency) || 0,
+        revenue: parseFloat(creative.analytics.conversionValueInLocalCurrency) || 0,
+      })
+    }
+  })
+
+  return { creatives, metrics }
+}
+

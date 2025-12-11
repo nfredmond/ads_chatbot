@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Send, Loader2, Sparkles, User, RotateCcw, ChevronDown } from 'lucide-react';
+import { FilterBar } from '@/components/FilterBar';
+import { useFilters } from '@/lib/context/FilterContext';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -46,6 +48,27 @@ export default function ChatPage() {
   const [showModelSelector, setShowModelSelector] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const modelSelectorRef = useRef<HTMLDivElement>(null);
+  
+  // Filter context
+  const { getEffectiveDateRange, selectedCustomers, setAvailableCustomers } = useFilters();
+
+  // Fetch available customers on mount
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const response = await fetch('/api/data?startDate=2000-01-01&endDate=2099-12-31');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.availableCustomers?.length > 0) {
+            setAvailableCustomers(data.availableCustomers);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch customers:', error);
+      }
+    };
+    fetchCustomers();
+  }, [setAvailableCustomers]);
 
   // Close model selector when clicking outside
   useEffect(() => {
@@ -76,6 +99,9 @@ export default function ChatPage() {
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setLoading(true);
 
+    // Get current filter values
+    const dateRange = getEffectiveDateRange();
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -83,6 +109,9 @@ export default function ChatPage() {
         body: JSON.stringify({ 
           messages: [...messages, { role: 'user', content: userMessage }],
           model: selectedModel,
+          startDate: dateRange.startDate,
+          endDate: dateRange.endDate,
+          customers: selectedCustomers.length > 0 ? selectedCustomers : undefined,
         }),
       });
 
@@ -125,17 +154,18 @@ export default function ChatPage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="p-6 border-b border-white/10">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Sparkles className="w-6 h-6 text-purple-400" />
-              AI Assistant
-            </h1>
-            <p className="text-gray-400 text-sm mt-1">
-              Connected to your real ads data
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Sparkles className="w-6 h-6 text-purple-400" />
+                AI Assistant
+              </h1>
+              <p className="text-gray-400 text-sm mt-1">
+                Connected to your real ads data
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
             {/* Model Selector */}
             <div className="relative" ref={modelSelectorRef}>
               <button
@@ -239,7 +269,11 @@ export default function ChatPage() {
                 Clear Chat
               </button>
             )}
+            </div>
           </div>
+          
+          {/* Filters */}
+          <FilterBar showCustomerFilter={true} />
         </div>
       </div>
 
