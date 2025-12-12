@@ -203,7 +203,9 @@ if (campaignsError) {
   console.log(`Successfully inserted/updated ${campaigns?.length || 0} campaigns`)
 
   // Build campaign ID map for later use
-  const campaignIdMap = new Map(campaigns?.map((c: any) => [c.campaign_id, c.id]) || [])
+  const campaignIdMap = new Map<string, string>(
+    campaigns?.map((c: any): [string, string] => [c.campaign_id, c.id]) || []
+  )
 
   // Insert campaign metrics
   let campaignMetricsInserted = 0
@@ -413,7 +415,9 @@ async function syncMetaAdsData(supabase: any, account: any, tenantId: string, to
       throw new Error(`Failed to save campaigns: ${campaignsError.message}`)
     }
 
-    const campaignIdMap = new Map(campaigns?.map((c: any) => [c.campaign_id, c.id]) || [])
+    const campaignIdMap = new Map<string, string>(
+      campaigns?.map((c: any): [string, string] => [c.campaign_id, c.id]) || []
+    )
 
     // Insert campaign metrics
     let campaignMetricsInserted = 0
@@ -616,7 +620,9 @@ async function syncLinkedInAdsData(supabase: any, account: any, tenantId: string
       throw new Error(`Failed to save campaigns: ${campaignsError.message}`)
     }
 
-    const campaignIdMap = new Map(campaigns?.map((c: any) => [c.campaign_id, c.id]) || [])
+    const campaignIdMap = new Map<string, string>(
+      campaigns?.map((c: any): [string, string] => [c.campaign_id, c.id]) || []
+    )
     const campaignApiIds = campaigns?.map((c: any) => c.campaign_id) || []
 
     // Insert campaign metrics

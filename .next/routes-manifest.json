@@ -1,0 +1,218 @@
+{
+  "version": 3,
+  "pages404": true,
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/api/analytics/aggregated",
+      "regex": "^/api/analytics/aggregated(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/analytics/aggregated(?:/)?$"
+    },
+    {
+      "page": "/api/chat",
+      "regex": "^/api/chat(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/chat(?:/)?$"
+    },
+    {
+      "page": "/api/connection-status",
+      "regex": "^/api/connection\\-status(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/connection\\-status(?:/)?$"
+    },
+    {
+      "page": "/api/cron/check-tokens",
+      "regex": "^/api/cron/check\\-tokens(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/cron/check\\-tokens(?:/)?$"
+    },
+    {
+      "page": "/api/health",
+      "regex": "^/api/health(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/health(?:/)?$"
+    },
+    {
+      "page": "/api/init",
+      "regex": "^/api/init(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/init(?:/)?$"
+    },
+    {
+      "page": "/api/sync-data",
+      "regex": "^/api/sync\\-data(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/sync\\-data(?:/)?$"
+    },
+    {
+      "page": "/api/webhooks/meta",
+      "regex": "^/api/webhooks/meta(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/webhooks/meta(?:/)?$"
+    },
+    {
+      "page": "/auth/callback",
+      "regex": "^/auth/callback(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/auth/callback(?:/)?$"
+    },
+    {
+      "page": "/auth/google",
+      "regex": "^/auth/google(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/auth/google(?:/)?$"
+    },
+    {
+      "page": "/auth/linkedin",
+      "regex": "^/auth/linkedin(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/auth/linkedin(?:/)?$"
+    },
+    {
+      "page": "/auth/meta",
+      "regex": "^/auth/meta(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/auth/meta(?:/)?$"
+    },
+    {
+      "page": "/dashboard",
+      "regex": "^/dashboard(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard(?:/)?$"
+    },
+    {
+      "page": "/dashboard/chat",
+      "regex": "^/dashboard/chat(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/chat(?:/)?$"
+    },
+    {
+      "page": "/dashboard/settings",
+      "regex": "^/dashboard/settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard/settings(?:/)?$"
+    },
+    {
+      "page": "/favicon.ico",
+      "regex": "^/favicon\\.ico(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/favicon\\.ico(?:/)?$"
+    },
+    {
+      "page": "/icon.png",
+      "regex": "^/icon\\.png(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/icon\\.png(?:/)?$"
+    },
+    {
+      "page": "/login",
+      "regex": "^/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/login(?:/)?$"
+    },
+    {
+      "page": "/onboarding",
+      "regex": "^/onboarding(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/onboarding(?:/)?$"
+    },
+    {
+      "page": "/privacy-policy",
+      "regex": "^/privacy\\-policy(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/privacy\\-policy(?:/)?$"
+    },
+    {
+      "page": "/setup",
+      "regex": "^/setup(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/setup(?:/)?$"
+    },
+    {
+      "page": "/setup/google-ads",
+      "regex": "^/setup/google\\-ads(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/setup/google\\-ads(?:/)?$"
+    },
+    {
+      "page": "/setup/linkedin-ads",
+      "regex": "^/setup/linkedin\\-ads(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/setup/linkedin\\-ads(?:/)?$"
+    },
+    {
+      "page": "/setup/meta-ads",
+      "regex": "^/setup/meta\\-ads(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/setup/meta\\-ads(?:/)?$"
+    },
+    {
+      "page": "/signup",
+      "regex": "^/signup(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/signup(?:/)?$"
+    },
+    {
+      "page": "/terms-of-service",
+      "regex": "^/terms\\-of\\-service(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/terms\\-of\\-service(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSuffix": ".prefetch.rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}
