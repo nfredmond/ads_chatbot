@@ -269,11 +269,16 @@ export default function SettingsPage() {
         throw new Error('Please fill in all required Google Ads credentials');
       }
 
+      const normalizedGoogleCustomerId = googleCustomerId.replace(/\D/g, '');
+      if (!normalizedGoogleCustomerId) {
+        throw new Error('Google Customer ID is invalid. Use digits only (dashes are okay; we will clean them).');
+      }
+
       // Save credentials first (without tokens - they'll be added via OAuth)
       const { error: upsertError } = await supabase.from('ad_accounts').upsert({
         tenant_id: profile?.tenant_id,
         platform: 'google_ads',
-        account_id: googleCustomerId,
+        account_id: normalizedGoogleCustomerId,
         account_name: 'Google Ads Account',
         status: 'pending',
         metadata: {

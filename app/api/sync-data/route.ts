@@ -158,13 +158,23 @@ async function syncGoogleAdsData(supabase: any, account: any, tenantId: string, 
     throw new Error('Google Ads credentials incomplete. Please reconfigure in settings.')
   }
 
+  const normalizeCustomerId = (value?: string) => String(value || '').replace(/\D/g, '')
+  const normalizedCustomerId = normalizeCustomerId(account.account_id)
+  const normalizedLoginCustomerId = normalizeCustomerId(account.metadata?.login_customer_id)
+
+  if (!normalizedCustomerId) {
+    throw new Error('Google Ads customer ID is missing or invalid. Please update it in Settings.')
+  }
+
   const config = {
     clientId: account.metadata.client_id,
     clientSecret: account.metadata.client_secret,
     developerToken: account.metadata.developer_token,
-    customerId: account.account_id,
+    customerId: normalizedCustomerId,
     refreshToken: tokens.refreshToken,
-    loginCustomerId: account.metadata?.login_customer_id,
+    // If login_customer_id is not configured, fall back to customerId.
+    // This is especially important for MCC/manager account setups.
+    loginCustomerId: normalizedLoginCustomerId || normalizedCustomerId,
   }
 
   // ============================================

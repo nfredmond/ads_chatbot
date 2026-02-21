@@ -18,6 +18,21 @@ export interface GoogleAdsConfig {
   loginCustomerId?: string
 }
 
+function normalizeCustomerId(rawId?: string): string {
+  return String(rawId || '').replace(/\D/g, '')
+}
+
+function withGoogleAuthHeaders(config: GoogleAdsConfig, accessToken: string) {
+  const normalizedLoginId = normalizeCustomerId(config.loginCustomerId)
+
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${accessToken}`,
+    'developer-token': config.developerToken,
+    ...(normalizedLoginId ? { 'login-customer-id': normalizedLoginId } : {}),
+  }
+}
+
 export async function getGoogleAdsAccessToken(
   clientId: string,
   clientSecret: string,
@@ -63,7 +78,15 @@ export async function fetchGoogleAdsCampaigns(config: GoogleAdsConfig) {
     throw new Error('Missing refresh token for Google Ads OAuth flow')
   }
 
-  logger.info('Fetching Google Ads campaigns', { customerId: config.customerId })
+  const normalizedCustomerId = normalizeCustomerId(config.customerId)
+  if (!normalizedCustomerId) {
+    throw new Error(`Invalid Google Ads customer ID: ${config.customerId}`)
+  }
+
+  logger.info('Fetching Google Ads campaigns', {
+    customerId: normalizedCustomerId,
+    inputCustomerId: config.customerId,
+  })
 
   // Google Ads API uses GAQL (Google Ads Query Language)
   const query = `
@@ -91,18 +114,14 @@ export async function fetchGoogleAdsCampaigns(config: GoogleAdsConfig) {
     config.refreshToken
   )
 
-  const endpoint = `https://googleads.googleapis.com/v21/customers/${config.customerId}/googleAds:search`
+  const endpoint = `https://googleads.googleapis.com/v21/customers/${normalizedCustomerId}/googleAds:search`
 
   const data = await withRateLimit('google_ads', async () => {
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-        'developer-token': config.developerToken,
-        ...(config.loginCustomerId ? { 'login-customer-id': config.loginCustomerId } : {}),
-      },
-      body: JSON.stringify({ query, pageSize: 1000 }),
+      headers: withGoogleAuthHeaders(config, accessToken),
+      // NOTE: Google Ads Search endpoint no longer supports custom pageSize.
+      body: JSON.stringify({ query }),
     })
 
     const responseData = await response.json()
@@ -194,7 +213,15 @@ export async function fetchGoogleAdsAdGroups(config: GoogleAdsConfig) {
     throw new Error('Missing refresh token for Google Ads OAuth flow')
   }
 
-  logger.info('Fetching Google Ads ad groups', { customerId: config.customerId })
+  const normalizedCustomerId = normalizeCustomerId(config.customerId)
+  if (!normalizedCustomerId) {
+    throw new Error(`Invalid Google Ads customer ID: ${config.customerId}`)
+  }
+
+  logger.info('Fetching Google Ads ad groups', {
+    customerId: normalizedCustomerId,
+    inputCustomerId: config.customerId,
+  })
 
   const query = `
     SELECT
@@ -222,18 +249,14 @@ export async function fetchGoogleAdsAdGroups(config: GoogleAdsConfig) {
     config.refreshToken
   )
 
-  const endpoint = `https://googleads.googleapis.com/v21/customers/${config.customerId}/googleAds:search`
+  const endpoint = `https://googleads.googleapis.com/v21/customers/${normalizedCustomerId}/googleAds:search`
 
   const data = await withRateLimit('google_ads', async () => {
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-        'developer-token': config.developerToken,
-        ...(config.loginCustomerId ? { 'login-customer-id': config.loginCustomerId } : {}),
-      },
-      body: JSON.stringify({ query, pageSize: 10000 }),
+      headers: withGoogleAuthHeaders(config, accessToken),
+      // NOTE: Google Ads Search endpoint no longer supports custom pageSize.
+      body: JSON.stringify({ query }),
     })
 
     const responseData = await response.json()
@@ -312,7 +335,15 @@ export async function fetchGoogleAdsAds(config: GoogleAdsConfig) {
     throw new Error('Missing refresh token for Google Ads OAuth flow')
   }
 
-  logger.info('Fetching Google Ads ads', { customerId: config.customerId })
+  const normalizedCustomerId = normalizeCustomerId(config.customerId)
+  if (!normalizedCustomerId) {
+    throw new Error(`Invalid Google Ads customer ID: ${config.customerId}`)
+  }
+
+  logger.info('Fetching Google Ads ads', {
+    customerId: normalizedCustomerId,
+    inputCustomerId: config.customerId,
+  })
 
   const query = `
     SELECT
@@ -343,18 +374,14 @@ export async function fetchGoogleAdsAds(config: GoogleAdsConfig) {
     config.refreshToken
   )
 
-  const endpoint = `https://googleads.googleapis.com/v21/customers/${config.customerId}/googleAds:search`
+  const endpoint = `https://googleads.googleapis.com/v21/customers/${normalizedCustomerId}/googleAds:search`
 
   const data = await withRateLimit('google_ads', async () => {
     const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-        'developer-token': config.developerToken,
-        ...(config.loginCustomerId ? { 'login-customer-id': config.loginCustomerId } : {}),
-      },
-      body: JSON.stringify({ query, pageSize: 10000 }),
+      headers: withGoogleAuthHeaders(config, accessToken),
+      // NOTE: Google Ads Search endpoint no longer supports custom pageSize.
+      body: JSON.stringify({ query }),
     })
 
     const responseData = await response.json()
