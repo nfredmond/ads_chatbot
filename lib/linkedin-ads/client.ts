@@ -21,6 +21,19 @@ export interface LinkedInAdsConfig {
   apiVersion?: string
 }
 
+function normalizeLinkedInId(value: unknown): string {
+  if (value === null || value === undefined) return ''
+  const str = String(value)
+  const urnParts = str.split(':')
+  return urnParts[urnParts.length - 1] || str
+}
+
+function toLinkedInUrn(entity: 'sponsoredAccount' | 'sponsoredCampaign' | 'sponsoredCreative', id: unknown): string {
+  const str = String(id || '')
+  if (str.startsWith('urn:li:')) return str
+  return `urn:li:${entity}:${normalizeLinkedInId(str)}`
+}
+
 /**
  * Helper to create standard LinkedIn API headers following Rest.li protocol
  */
@@ -150,10 +163,8 @@ export async function fetchLinkedInAdsCampaigns(config: LinkedInAdsConfig) {
   }
 
   // Step 2: Fetch campaigns for the ad account
-  // Build URN properly - account ID should be numeric
-  const accountUrn = adAccountId.toString().startsWith('urn:li:sponsoredAccount:') 
-    ? adAccountId.toString() 
-    : `urn:li:sponsoredAccount:${adAccountId}`
+  // Build URN properly - account ID can be URN or numeric in API responses.
+  const accountUrn = toLinkedInUrn('sponsoredAccount', adAccountId)
   
   const campaignsUrl = `${LINKEDIN_API_BASE}/rest/adCampaigns?q=search&search=(account:(values:List(${accountUrn})))&count=100`
   
@@ -234,13 +245,14 @@ export async function fetchLinkedInAdsCampaigns(config: LinkedInAdsConfig) {
 
   // Step 3: Fetch analytics for campaigns (batch request for efficiency)
   const dateRange = getDateRange()
-  const campaignIds = campaignsData.elements.map((c: any) => c.id)
+  const campaignIds = campaignsData.elements.map((c: any) => normalizeLinkedInId(c.id))
+  const campaignUrns = campaignIds.map((id: string) => toLinkedInUrn('sponsoredCampaign', id))
 
   const analyticsParams = new URLSearchParams({
     q: 'analytics',
     pivot: 'CAMPAIGN',
     dateRange: JSON.stringify(dateRange),
-    campaigns: `List(${campaignIds.join(',')})`,
+    campaigns: `List(${campaignUrns.join(',')})`,
     fields: 'impressions,clicks,costInLocalCurrency,externalWebsiteConversions,conversionValueInLocalCurrency',
   })
 
@@ -275,13 +287,13 @@ export async function fetchLinkedInAdsCampaigns(config: LinkedInAdsConfig) {
   })
 
   // Map analytics to campaigns
-  const analyticsMap = new Map(
-    analyticsData.elements?.map((a: any) => [a.pivotValues?.[0], a]) || []
+  const analyticsMap = new Map<string, any>(
+    analyticsData.elements?.map((a: any) => [normalizeLinkedInId(a.pivotValues?.[0]), a]) || []
   )
 
   const campaignsWithMetrics = campaignsData.elements.map((campaign: any) => ({
     ...campaign,
-    analytics: analyticsMap.get(campaign.id) || null,
+    analytics: analyticsMap.get(normalizeLinkedInId(campaign.id)) || null,
   }))
 
   logAPISuccess('linkedin_ads', 'fetchCampaigns', {
@@ -297,11 +309,13 @@ export function transformLinkedInAdsData(apiData: any[]) {
   const metrics: any[] = []
 
   apiData.forEach((campaign: any) => {
+    const campaignId = normalizeLinkedInId(campaign.id)
+
     campaigns.push({
-      campaign_id: campaign.id.toString(),
+      campaign_id: campaignId,
       campaign_name: campaign.name,
       platform: 'linkedin_ads',
-      status: normalizeLinkedInStatus(campaign.status),
+      status: normalizeLinkedInStatus(campaign.status || 'DRAFT'),
       budget_amount: campaign.dailyBudget?.amount
         ? parseFloat(campaign.dailyBudget.amount)
         : null,
@@ -309,7 +323,7 @@ export function transformLinkedInAdsData(apiData: any[]) {
 
     if (campaign.analytics) {
       metrics.push({
-        campaign_api_id: campaign.id.toString(),
+        campaign_api_id: campaignId,
         date: new Date().toISOString().split('T')[0],
         impressions: parseInt(campaign.analytics.impressions) || 0,
         clicks: parseInt(campaign.analytics.clicks) || 0,
@@ -353,9 +367,7 @@ export async function fetchLinkedInCreatives(config: LinkedInAdsConfig, campaign
 
   // Fetch creatives for campaigns
   // LinkedIn creatives are linked to campaigns, not ad groups
-  const campaignUrns = campaignIds.map(id => 
-    id.startsWith('urn:li:sponsoredCampaign:') ? id : `urn:li:sponsoredCampaign:${id}`
-  )
+  const campaignUrns = campaignIds.map((id) => toLinkedInUrn('sponsoredCampaign', id))
 
   const creativesUrl = `${LINKEDIN_API_BASE}/rest/creatives?q=search&search=(campaigns:List(${campaignUrns.join(',')}))&count=500`
   
@@ -431,7 +443,8 @@ export async function fetchLinkedInCreatives(config: LinkedInAdsConfig, campaign
 
   // Fetch analytics for creatives
   const dateRange = getDateRange()
-  const creativeIds = creativesData.elements.map((c: any) => c.id)
+  const creativeIds = creativesData.elements.map((c: any) => normalizeLinkedInId(c.id))
+  const creativeUrns = creativeIds.map((id: string) => toLinkedInUrn('sponsoredCreative', id))
 
   let analyticsData = { elements: [] }
   try {
@@ -439,7 +452,7 @@ export async function fetchLinkedInCreatives(config: LinkedInAdsConfig, campaign
       q: 'analytics',
       pivot: 'CREATIVE',
       dateRange: JSON.stringify(dateRange),
-      creatives: `List(${creativeIds.join(',')})`,
+      creatives: `List(${creativeUrns.join(',')})`,
       fields: 'impressions,clicks,costInLocalCurrency,externalWebsiteConversions,conversionValueInLocalCurrency',
     })
 
@@ -468,13 +481,13 @@ export async function fetchLinkedInCreatives(config: LinkedInAdsConfig, campaign
   }
 
   // Map analytics to creatives
-  const analyticsMap = new Map(
-    analyticsData.elements?.map((a: any) => [a.pivotValues?.[0], a]) || []
+  const analyticsMap = new Map<string, any>(
+    analyticsData.elements?.map((a: any) => [normalizeLinkedInId(a.pivotValues?.[0]), a]) || []
   )
 
   const creativesWithMetrics = creativesData.elements.map((creative: any) => ({
     ...creative,
-    analytics: analyticsMap.get(creative.id) || null,
+    analytics: analyticsMap.get(normalizeLinkedInId(creative.id)) || null,
   }))
 
   logAPISuccess('linkedin_ads', 'fetchCreatives', {
@@ -492,7 +505,7 @@ export function transformLinkedInCreativeData(apiData: any[], campaignIdMap: Map
   apiData.forEach((creative: any) => {
     // Extract campaign ID from the creative's campaign URN
     const campaignUrn = creative.campaign
-    const campaignApiId = campaignUrn?.replace('urn:li:sponsoredCampaign:', '') || null
+    const campaignApiId = campaignUrn ? normalizeLinkedInId(campaignUrn) : null
     
     // Get the database campaign ID
     const dbCampaignId = campaignApiId ? campaignIdMap.get(campaignApiId) : null
@@ -526,8 +539,8 @@ export function transformLinkedInCreativeData(apiData: any[], campaignIdMap: Map
     // For LinkedIn, we create a pseudo "ad group" per campaign since LinkedIn
     // doesn't have a true ad group level - creatives link directly to campaigns
     creatives.push({
-      ad_id: creative.id.toString(),
-      ad_name: headlines[0] || `Creative ${creative.id}`,
+      ad_id: normalizeLinkedInId(creative.id),
+      ad_name: headlines[0] || `Creative ${normalizeLinkedInId(creative.id)}`,
       campaign_api_id: campaignApiId,
       db_campaign_id: dbCampaignId,
       platform: 'linkedin_ads',
@@ -546,7 +559,7 @@ export function transformLinkedInCreativeData(apiData: any[], campaignIdMap: Map
 
     if (creative.analytics) {
       metrics.push({
-        ad_api_id: creative.id.toString(),
+        ad_api_id: normalizeLinkedInId(creative.id),
         date: new Date().toISOString().split('T')[0],
         impressions: parseInt(creative.analytics.impressions) || 0,
         clicks: parseInt(creative.analytics.clicks) || 0,
@@ -559,4 +572,3 @@ export function transformLinkedInCreativeData(apiData: any[], campaignIdMap: Map
 
   return { creatives, metrics }
 }
-

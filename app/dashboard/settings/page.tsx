@@ -23,6 +23,28 @@ interface SyncResult {
   message?: string;
 }
 
+function formatSyncSummary(results: SyncResult[]) {
+  const totalCampaigns = results.reduce((sum, r) => sum + (r.campaigns || 0), 0);
+  const totalMetrics = results.reduce((sum, r) => sum + (r.metrics || 0), 0);
+  const failed = results.filter((r) => r.status === 'error');
+
+  if (failed.length === 0) {
+    return {
+      success: `Synced ${totalCampaigns} campaigns and ${totalMetrics} metric records.`,
+      error: null as string | null,
+    };
+  }
+
+  const details = failed
+    .map((r) => `${r.platform.replace('_ads', ' Ads')}: ${r.message || 'Unknown error'}`)
+    .join(' | ');
+
+  return {
+    success: `Partial sync: ${totalCampaigns} campaigns and ${totalMetrics} metrics synced.`,
+    error: details,
+  };
+}
+
 export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
@@ -193,14 +215,15 @@ export default function SettingsPage() {
           try {
             const response = await fetch('/api/sync-data', { method: 'POST' });
             const data = await response.json();
-            if (response.ok) {
-              const results: SyncResult[] = data.results || [];
-              const totalCampaigns = results.reduce((sum, r) => sum + (r.campaigns || 0), 0);
-              const totalMetrics = results.reduce((sum, r) => sum + (r.metrics || 0), 0);
-              setSuccess(`✅ Connection successful! Synced ${totalCampaigns} campaigns and ${totalMetrics} metric records. Check your dashboard!`);
-              await loadAdAccounts();
-            } else {
+            if (!response.ok) {
               setError(`Sync completed but encountered issues: ${data.error || 'Unknown error'}`);
+            } else {
+              const summary = formatSyncSummary((data.results || []) as SyncResult[]);
+              setSuccess(`Connection successful! ${summary.success}`);
+              if (summary.error) {
+                setError(summary.error);
+              }
+              await loadAdAccounts();
             }
           } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Unknown error';
@@ -238,11 +261,11 @@ export default function SettingsPage() {
         throw new Error(data.error || 'Failed to sync data');
       }
 
-      const results = data.results || [];
-      const totalCampaigns = results.reduce((sum: number, r: any) => sum + (r.campaigns || 0), 0);
-      const totalMetrics = results.reduce((sum: number, r: any) => sum + (r.metrics || 0), 0);
-
-      setSuccess(`Synced ${totalCampaigns} campaigns and ${totalMetrics} metric records!`);
+      const summary = formatSyncSummary((data.results || []) as SyncResult[]);
+      setSuccess(summary.success);
+      if (summary.error) {
+        setError(summary.error);
+      }
       await loadAdAccounts();
     } catch (err: any) {
       setError(err.message || 'Failed to sync data');

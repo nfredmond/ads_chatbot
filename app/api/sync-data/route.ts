@@ -43,7 +43,13 @@ export async function POST(_request: NextRequest) {
       tokens: decryptAccountTokens(account),
     }))
 
-    const syncResults = []
+    const syncResults: Array<{
+      platform: string
+      status: 'success' | 'error'
+      campaigns?: number
+      metrics?: number
+      message?: string
+    }> = []
 
     // Sync data from each platform
     for (const account of accountsWithTokens) {
@@ -117,20 +123,34 @@ export async function POST(_request: NextRequest) {
           .update({ last_synced_at: new Date().toISOString() })
           .eq('id', account.id)
       } catch (err: any) {
+        const errorMessage =
+          err?.originalError?.message ||
+          err?.message ||
+          'Unknown sync error'
         logger.error(`Error syncing ${account.platform}:`, { error: err, userId: user.id })
         logSyncOperation(account.platform, 'failed', {
           userId: user.id,
           error: err,
           duration: Date.now() - startTime,
         })
-        syncResults.push({ platform: account.platform, status: 'error', message: err.message })
+        syncResults.push({
+          platform: account.platform,
+          status: 'error',
+          message: errorMessage,
+        })
       }
     }
 
-    return NextResponse.json({ 
-      message: 'Data sync initiated',
-      results: syncResults 
-    })
+    const hasErrors = syncResults.some((result) => result.status === 'error')
+
+    return NextResponse.json(
+      {
+        message: hasErrors ? 'Data sync completed with errors' : 'Data sync completed',
+        hasErrors,
+        results: syncResults,
+      },
+      { status: hasErrors ? 207 : 200 }
+    )
   } catch (error: any) {
     console.error('Sync error:', error)
     return NextResponse.json(
@@ -174,7 +194,7 @@ async function syncGoogleAdsData(supabase: any, account: any, tenantId: string, 
     refreshToken: tokens.refreshToken,
     // If login_customer_id is not configured, fall back to customerId.
     // This is especially important for MCC/manager account setups.
-    loginCustomerId: normalizedLoginCustomerId || normalizedCustomerId,
+    loginCustomerId: normalizedLoginCustomerId || undefined,
   }
 
   // ============================================
@@ -290,7 +310,9 @@ if (campaignsError) {
             .filter((m: any) => m !== null)
 
           if (agMetricsToInsert.length > 0) {
-            await supabase.from('ad_group_metrics').upsert(agMetricsToInsert)
+            await supabase
+              .from('ad_group_metrics')
+              .upsert(agMetricsToInsert, { onConflict: 'tenant_id,ad_group_id,date' })
             adGroupMetricsInserted = agMetricsToInsert.length
           }
         }
@@ -346,7 +368,9 @@ if (campaignsError) {
             .filter((m: any) => m !== null)
 
           if (adMetricsToInsert.length > 0) {
-            await supabase.from('ad_metrics').upsert(adMetricsToInsert)
+            await supabase
+              .from('ad_metrics')
+              .upsert(adMetricsToInsert, { onConflict: 'tenant_id,ad_id,date' })
             adMetricsInserted = adMetricsToInsert.length
           }
         }
@@ -388,6 +412,9 @@ async function syncMetaAdsData(supabase: any, account: any, tenantId: string, to
 
   if (!tokens?.accessToken) {
     throw new Error('Meta Ads access token missing. Please reconnect your account in Settings.')
+  }
+  if (!account.account_id || account.account_id === 'pending') {
+    throw new Error('Meta Ads account ID is not configured. Complete OAuth connection in Settings.')
   }
 
   const config = {
@@ -442,7 +469,9 @@ async function syncMetaAdsData(supabase: any, account: any, tenantId: string, to
         .filter((m: any) => m !== null)
 
       if (metricsToInsert.length > 0) {
-        await supabase.from('campaign_metrics').upsert(metricsToInsert)
+        await supabase
+          .from('campaign_metrics')
+          .upsert(metricsToInsert, { onConflict: 'campaign_id,date,tenant_id' })
         campaignMetricsInserted = metricsToInsert.length
       }
     }
@@ -489,7 +518,9 @@ async function syncMetaAdsData(supabase: any, account: any, tenantId: string, to
               .filter((m: any) => m !== null)
 
             if (asMetricsToInsert.length > 0) {
-              await supabase.from('ad_group_metrics').upsert(asMetricsToInsert)
+              await supabase
+                .from('ad_group_metrics')
+                .upsert(asMetricsToInsert, { onConflict: 'tenant_id,ad_group_id,date' })
               adSetMetricsInserted = asMetricsToInsert.length
             }
           }
@@ -541,7 +572,9 @@ async function syncMetaAdsData(supabase: any, account: any, tenantId: string, to
               .filter((m: any) => m !== null)
 
             if (adMetricsToInsert.length > 0) {
-              await supabase.from('ad_metrics').upsert(adMetricsToInsert)
+              await supabase
+                .from('ad_metrics')
+                .upsert(adMetricsToInsert, { onConflict: 'tenant_id,ad_id,date' })
               adMetricsInserted = adMetricsToInsert.length
             }
           }
@@ -589,6 +622,9 @@ async function syncLinkedInAdsData(supabase: any, account: any, tenantId: string
   
   if (!tokens?.accessToken) {
     throw new Error('LinkedIn Ads access token missing. Please reconnect your account in Settings.')
+  }
+  if (!account.account_id || account.account_id === 'pending') {
+    throw new Error('LinkedIn Ads account ID is not configured. Complete OAuth connection in Settings.')
   }
 
   const config = {
@@ -648,7 +684,9 @@ async function syncLinkedInAdsData(supabase: any, account: any, tenantId: string
         .filter((m: any) => m !== null)
 
       if (metricsToInsert.length > 0) {
-        await supabase.from('campaign_metrics').upsert(metricsToInsert)
+        await supabase
+          .from('campaign_metrics')
+          .upsert(metricsToInsert, { onConflict: 'campaign_id,date,tenant_id' })
         campaignMetricsInserted = metricsToInsert.length
       }
     }
@@ -737,7 +775,9 @@ async function syncLinkedInAdsData(supabase: any, account: any, tenantId: string
               .filter((m: any) => m !== null)
 
             if (creativeMetricsToInsert.length > 0) {
-              await supabase.from('ad_metrics').upsert(creativeMetricsToInsert)
+              await supabase
+                .from('ad_metrics')
+                .upsert(creativeMetricsToInsert, { onConflict: 'tenant_id,ad_id,date' })
               creativeMetricsInserted = creativeMetricsToInsert.length
             }
           }
@@ -775,4 +815,3 @@ async function syncLinkedInAdsData(supabase: any, account: any, tenantId: string
     throw error
   }
 }
-

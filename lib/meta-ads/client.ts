@@ -23,6 +23,14 @@ interface MetaPagingResponse<T> {
   }
 }
 
+function normalizeMetaAccountId(rawAccountId: string): string {
+  const stripped = String(rawAccountId || '').replace(/^act_/, '')
+  if (!/^\d+$/.test(stripped)) {
+    throw new Error('Meta Ads account ID is invalid. Reconnect your Meta Ads account in Settings.')
+  }
+  return `act_${stripped}`
+}
+
 async function fetchAllPages<T>(initialUrl: string): Promise<T[]> {
   const results: T[] = []
   let nextUrl: string | undefined = initialUrl
@@ -113,12 +121,7 @@ export async function fetchMetaAdsCampaigns(config: MetaAdsConfig) {
   const apiVersion = config.apiVersion ?? DEFAULT_GRAPH_VERSION
   
   // Ensure account ID has act_ prefix
-  let accountId = config.accountId
-  if (!accountId.startsWith('act_')) {
-    // Remove any existing act_ prefix and add it
-    accountId = accountId.replace(/^act_/, '')
-    accountId = `act_${accountId}`
-  }
+  const accountId = normalizeMetaAccountId(config.accountId)
 
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   const until = new Date().toISOString().split('T')[0]
@@ -270,6 +273,22 @@ export function transformMetaAdsData(apiData: {
     })
   })
 
+  // Include campaigns with zero recent delivery so they still appear in dashboard state.
+  for (const metaCampaign of apiData.campaignMetadata) {
+    if (seenCampaigns.has(metaCampaign.id)) continue
+
+    campaigns.push({
+      campaign_id: metaCampaign.id,
+      campaign_name: metaCampaign.name,
+      platform: 'meta_ads',
+      status: normalizeMetaStatus(metaCampaign.status || 'UNKNOWN'),
+      budget_amount: metaCampaign.daily_budget ? parseFloat(metaCampaign.daily_budget) / 100 : null,
+      objective: metaCampaign.objective || null,
+    })
+
+    seenCampaigns.add(metaCampaign.id)
+  }
+
   return { campaigns, metrics }
 }
 
@@ -290,11 +309,7 @@ function normalizeMetaStatus(status: string): string {
 export async function fetchMetaAdsAdSets(config: MetaAdsConfig) {
   const apiVersion = config.apiVersion ?? DEFAULT_GRAPH_VERSION
   
-  let accountId = config.accountId
-  if (!accountId.startsWith('act_')) {
-    accountId = accountId.replace(/^act_/, '')
-    accountId = `act_${accountId}`
-  }
+  const accountId = normalizeMetaAccountId(config.accountId)
 
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   const until = new Date().toISOString().split('T')[0]
@@ -449,11 +464,7 @@ export function transformMetaAdsAdSetData(apiData: {
 export async function fetchMetaAdsAds(config: MetaAdsConfig) {
   const apiVersion = config.apiVersion ?? DEFAULT_GRAPH_VERSION
   
-  let accountId = config.accountId
-  if (!accountId.startsWith('act_')) {
-    accountId = accountId.replace(/^act_/, '')
-    accountId = `act_${accountId}`
-  }
+  const accountId = normalizeMetaAccountId(config.accountId)
 
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   const until = new Date().toISOString().split('T')[0]
@@ -631,4 +642,3 @@ export function transformMetaAdsAdData(apiData: {
 
   return { ads, metrics }
 }
-
