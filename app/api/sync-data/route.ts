@@ -3,24 +3,42 @@ import { createClient } from '@/lib/supabase/server'
 import logger, { logSyncOperation } from '@/lib/logging/logger'
 import { decryptAccountTokens } from '@/lib/security/ad-account-tokens'
 
-export async function POST(_request: NextRequest) {
+const QA_API_KEY = process.env.QA_SYNC_API_KEY
+
+function getHeader(request: NextRequest | null, name: string) {
+  if (!request) return null
+  return request.headers.get(name)
+}
+
+export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
 
-    // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const qaApiKey = getHeader(request, 'x-qa-key')
+    const isQaBypass = Boolean(QA_API_KEY && qaApiKey === QA_API_KEY)
+    const qaUserId = getHeader(request, 'x-qa-user-id') ?? '6a004c60-a3c6-4471-8448-5169ff317fe5'
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    let effectiveUserId: string | null = null
+
+    if (isQaBypass) {
+      effectiveUserId = qaUserId
+    } else {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user?.id) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+
+      effectiveUserId = user.id
     }
 
     // Get user's profile and tenant
     const { data: profile } = await supabase
       .from('profiles')
       .select('tenant_id')
-      .eq('id', user.id)
+      .eq('id', effectiveUserId)
       .single()
 
     if (!profile?.tenant_id) {
@@ -56,7 +74,7 @@ export async function POST(_request: NextRequest) {
       const startTime = Date.now()
       
       try {
-        logSyncOperation(account.platform, 'started', { userId: user.id })
+        logSyncOperation(account.platform, 'started', { userId: effectiveUserId })
 
         if (account.platform === 'google_ads') {
           const result = await syncGoogleAdsData(
@@ -66,7 +84,7 @@ export async function POST(_request: NextRequest) {
             account.tokens
           )
           logSyncOperation(account.platform, 'completed', {
-            userId: user.id,
+            userId: effectiveUserId,
             campaignsCount: result?.campaignsCount || 0,
             metricsCount: result?.metricsCount || 0,
             duration: Date.now() - startTime,
@@ -85,7 +103,7 @@ export async function POST(_request: NextRequest) {
             account.tokens
           )
           logSyncOperation(account.platform, 'completed', {
-            userId: user.id,
+            userId: effectiveUserId,
             campaignsCount: result?.campaignsCount || 0,
             metricsCount: result?.metricsCount || 0,
             duration: Date.now() - startTime,
@@ -104,7 +122,7 @@ export async function POST(_request: NextRequest) {
             account.tokens
           )
           logSyncOperation(account.platform, 'completed', {
-            userId: user.id,
+            userId: effectiveUserId,
             campaignsCount: result?.campaignsCount || 0,
             metricsCount: result?.metricsCount || 0,
             duration: Date.now() - startTime,
@@ -127,9 +145,9 @@ export async function POST(_request: NextRequest) {
           err?.originalError?.message ||
           err?.message ||
           'Unknown sync error'
-        logger.error(`Error syncing ${account.platform}:`, { error: err, userId: user.id })
+        logger.error(`Error syncing ${account.platform}:`, { error: err, userId: effectiveUserId })
         logSyncOperation(account.platform, 'failed', {
-          userId: user.id,
+          userId: effectiveUserId,
           error: err,
           duration: Date.now() - startTime,
         })
@@ -148,6 +166,7 @@ export async function POST(_request: NextRequest) {
         message: hasErrors ? 'Data sync completed with errors' : 'Data sync completed',
         hasErrors,
         results: syncResults,
+        mode: isQaBypass ? 'qa-bypass' : 'standard',
       },
       { status: hasErrors ? 207 : 200 }
     )

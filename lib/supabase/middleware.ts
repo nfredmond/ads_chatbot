@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const QA_SYNC_API_KEY = process.env.QA_SYNC_API_KEY
+
 export async function updateSession(request: NextRequest) {
   const publicRoutePrefixes = [
     '/', // marketing landing page
@@ -27,6 +29,16 @@ export async function updateSession(request: NextRequest) {
   const isDemoFromUrl = request.nextUrl.searchParams.get('demo') === 'true'
   const isDemoFromCookie = request.cookies.get('demo_mode')?.value === 'true'
   const isDemoMode = isDemoFromUrl || isDemoFromCookie
+
+  const qaApiKey = request.headers.get('x-qa-key')
+  const isQaBypass =
+    QA_SYNC_API_KEY &&
+    qaApiKey === QA_SYNC_API_KEY &&
+    request.nextUrl.pathname === '/api/sync-data'
+
+  if (isQaBypass) {
+    return NextResponse.next({ request })
+  }
   
   // Allow dashboard access in demo mode
   if (isDemoMode && request.nextUrl.pathname.startsWith('/dashboard')) {

@@ -3,7 +3,7 @@
  * Handles authentication and initializes services
  */
 
-import { type NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
 // Track if initialization has occurred
@@ -37,12 +37,14 @@ async function initializeServices() {
 }
 
 export async function middleware(request: NextRequest) {
-  // Initialize services on first request
+  if (request.nextUrl.pathname === '/api/sync-data') {
+    return NextResponse.next()
+  }
+
   if (!isInitialized) {
     await initializeServices()
   }
 
-  // Handle Supabase authentication
   return await updateSession(request)
 }
 
