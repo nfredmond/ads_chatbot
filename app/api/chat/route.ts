@@ -304,6 +304,20 @@ export async function POST(request: NextRequest) {
       };
     }).sort((a, b) => b.spend - a.spend);
 
+    // Platform campaign inventory (includes zero-spend campaigns)
+    const campaignsByPlatform = campaigns.reduce((acc: Record<string, number>, c: any) => {
+      acc[c.platform] = (acc[c.platform] || 0) + 1;
+      return acc;
+    }, {});
+
+    const metaCampaignInventory = campaigns
+      .filter((c: any) => c.platform === 'meta_ads')
+      .map((c: any) => ({
+        name: c.campaign_name,
+        customer: c.customer_name || 'Unknown',
+        status: c.status,
+      }));
+
     console.log(`Chat API: User ${user?.id}, Tenant ${tenantId}, Accounts: ${adAccounts.length}, Campaigns: ${campaigns.length}, Metrics: ${recentMetrics.length}, Customers: ${customerMetrics.length}, AdGroups: ${adGroups.length}, Ads: ${ads.length}, DateRange: ${startDate || 'default'} to ${endDate || 'default'}, CustomerFilter: ${customers?.length || 'all'}`)
 
     // Build campaign platform map
@@ -464,6 +478,14 @@ OVERALL CAMPAIGN SUMMARY:
 PLATFORM-SPECIFIC BREAKDOWN:
 ${platformBreakdown.length > 0 ? JSON.stringify(platformBreakdown, null, 2) : 'No platform-specific data available'}
 
+CAMPAIGN INVENTORY COUNTS (all campaigns, including zero-spend):
+${JSON.stringify(campaignsByPlatform, null, 2)}
+
+META CAMPAIGN INVENTORY (all Meta campaigns, not spend-limited):
+${metaCampaignInventory.length > 0
+  ? metaCampaignInventory.slice(0, 100).map((c: any, i: number) => `${i + 1}. ${c.name} (${c.customer}) [${c.status}]`).join('\n')
+  : 'No Meta campaigns found in campaigns table'}
+
 TOP CAMPAIGNS (by budget):
 ${JSON.stringify(
   campaigns
@@ -601,6 +623,7 @@ You should:
 - Flag any ads with approval issues
 - Explain metrics like ROAS, CTR, CPA, CPC, and conversions at each level
 - Compare platforms when asked
+- When asked "how many campaigns" for a platform, use CAMPAIGN INVENTORY COUNTS / platform inventory lists (not spend-ranked subsets)
 - Be concise but thorough
 - Use specific numbers from their actual data - always cite real figures
 - If they have data, proactively highlight interesting patterns or concerns
