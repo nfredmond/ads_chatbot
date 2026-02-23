@@ -23,12 +23,52 @@ interface MetaPagingResponse<T> {
   }
 }
 
+interface MetaAdAccountSummary {
+  account_id: string
+  name?: string
+  account_status?: number
+}
+
+interface MetaCampaignMetadata {
+  id: string
+  name: string
+  status: string
+  daily_budget?: string
+  objective?: string
+  source_account_id?: string
+  source_account_name?: string
+}
+
+interface MetaCampaignInsight {
+  campaign_id: string
+  campaign_name: string
+  objective?: string
+  impressions?: string
+  clicks?: string
+  spend?: string
+  actions?: Array<{ action_type: string; value: string }>
+  action_values?: Array<{ action_type: string; value: string }>
+  date_start?: string
+  date_stop?: string
+  source_account_id?: string
+  source_account_name?: string
+}
+
+function stripMetaAccountPrefix(rawAccountId: string): string {
+  return String(rawAccountId || '').replace(/^act_/, '')
+}
+
 function normalizeMetaAccountId(rawAccountId: string): string {
-  const stripped = String(rawAccountId || '').replace(/^act_/, '')
+  const stripped = stripMetaAccountPrefix(rawAccountId)
   if (!/^\d+$/.test(stripped)) {
     throw new Error('Meta Ads account ID is invalid. Reconnect your Meta Ads account in Settings.')
   }
   return `act_${stripped}`
+}
+
+export function buildMetaCampaignId(rawAccountId: string, rawCampaignId: string): string {
+  const accountId = stripMetaAccountPrefix(rawAccountId)
+  return `meta:${accountId}:${String(rawCampaignId || '')}`
 }
 
 async function fetchAllPages<T>(initialUrl: string): Promise<T[]> {
@@ -117,16 +157,19 @@ async function fetchAllPages<T>(initialUrl: string): Promise<T[]> {
   return results
 }
 
-export async function fetchMetaAdsCampaigns(config: MetaAdsConfig) {
+async function fetchMetaCampaignDataForAccount(
+  config: MetaAdsConfig,
+  sourceAccount: { accountId: string; accountName?: string },
+  dateRange: { since: string; until: string }
+) {
   const apiVersion = config.apiVersion ?? DEFAULT_GRAPH_VERSION
   
   // Ensure account ID has act_ prefix
-  const accountId = normalizeMetaAccountId(config.accountId)
+  const accountId = normalizeMetaAccountId(sourceAccount.accountId)
+  const sourceAccountId = stripMetaAccountPrefix(sourceAccount.accountId)
+  const sourceAccountName = sourceAccount.accountName || accountId
 
-  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-  const until = new Date().toISOString().split('T')[0]
-
-  logger.info('Fetching Meta Ads campaigns', { accountId, dateRange: { since, until } })
+  logger.info('Fetching Meta Ads campaigns', { accountId, dateRange })
 
   // Validate required configuration
   if (!config.accessToken) {
@@ -150,23 +193,13 @@ export async function fetchMetaAdsCampaigns(config: MetaAdsConfig) {
   }
 
   const campaignsUrl = `https://graph.facebook.com/${apiVersion}/${accountId}/campaigns?${campaignsParams.toString()}`
-  
-  const campaignMetadata = await withRateLimit('meta_ads', async () => {
-    return await fetchAllPages<{
-      id: string
-      name: string
-      status: string
-      daily_budget?: string
-      objective?: string
-    }>(campaignsUrl)
-  })
 
   // Fetch insights at campaign level as recommended by Meta
   const insightsParams = new URLSearchParams({
     fields:
       'campaign_id,campaign_name,objective,impressions,clicks,spend,actions,action_values,date_start,date_stop',
     level: 'campaign',
-    time_range: JSON.stringify({ since, until }),
+    time_range: JSON.stringify(dateRange),
     action_attribution_windows: JSON.stringify(['1d_click', '7d_click']),
     use_unified_attribution_setting: 'true',
     access_token: config.accessToken,
@@ -181,6 +214,16 @@ export async function fetchMetaAdsCampaigns(config: MetaAdsConfig) {
 
   const insightsUrl = `https://graph.facebook.com/${apiVersion}/${accountId}/insights?${insightsParams.toString()}`
   
+  const campaignMetadataRaw = await withRateLimit('meta_ads', async () => {
+    return await fetchAllPages<{
+      id: string
+      name: string
+      status: string
+      daily_budget?: string
+      objective?: string
+    }>(campaignsUrl)
+  })
+
   const insightsData = await withRateLimit('meta_ads', async () => {
     return await fetchAllPages<{
       campaign_id: string
@@ -196,59 +239,181 @@ export async function fetchMetaAdsCampaigns(config: MetaAdsConfig) {
     }>(insightsUrl)
   })
 
-  logAPISuccess('meta_ads', 'fetchCampaigns', {
-    campaignCount: campaignMetadata.length,
-    insightsCount: insightsData.length,
+  const campaignMetadata: MetaCampaignMetadata[] = campaignMetadataRaw.map((campaign) => ({
+    ...campaign,
+    source_account_id: sourceAccountId,
+    source_account_name: sourceAccountName,
+  }))
+
+  const accountInsightsData: MetaCampaignInsight[] = insightsData.map((insight) => ({
+    ...insight,
+    source_account_id: sourceAccountId,
+    source_account_name: sourceAccountName,
+  }))
+
+  return { campaignMetadata, insightsData: accountInsightsData }
+}
+
+export async function listAccessibleMetaAdAccounts(config: MetaAdsConfig): Promise<MetaAdAccountSummary[]> {
+  const apiVersion = config.apiVersion ?? DEFAULT_GRAPH_VERSION
+
+  const params = new URLSearchParams({
+    fields: 'account_id,name,account_status',
+    access_token: config.accessToken,
+    limit: '200',
   })
 
-  return { campaignMetadata, insightsData, dateRange: { since, until } }
+  if (config.appSecret) {
+    const appsecretProof = generateAppsecretProof(config.accessToken, config.appSecret)
+    params.set('appsecret_proof', appsecretProof)
+  }
+
+  const accountsUrl = `https://graph.facebook.com/${apiVersion}/me/adaccounts?${params.toString()}`
+
+  return withRateLimit('meta_ads', async () => {
+    return fetchAllPages<MetaAdAccountSummary>(accountsUrl)
+  })
+}
+
+export async function fetchMetaAdsCampaigns(config: MetaAdsConfig) {
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const until = new Date().toISOString().split('T')[0]
+  const dateRange = { since, until }
+  const accountId = stripMetaAccountPrefix(config.accountId)
+
+  const singleAccountData = await fetchMetaCampaignDataForAccount(
+    config,
+    { accountId },
+    dateRange
+  )
+
+  logAPISuccess('meta_ads', 'fetchCampaigns', {
+    mode: 'single_account',
+    accountCount: 1,
+    campaignCount: singleAccountData.campaignMetadata.length,
+    insightsCount: singleAccountData.insightsData.length,
+  })
+
+  return { ...singleAccountData, dateRange }
+}
+
+export async function fetchMetaAdsCampaignsAggregated(config: MetaAdsConfig) {
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const until = new Date().toISOString().split('T')[0]
+  const dateRange = { since, until }
+  const configuredAccountId = stripMetaAccountPrefix(config.accountId)
+
+  let accountsToSync: Array<{ accountId: string; accountName?: string }> = []
+
+  try {
+    const accessibleAccounts = await listAccessibleMetaAdAccounts(config)
+    const uniqueAccounts = new Map<string, { accountId: string; accountName?: string }>()
+
+    for (const account of accessibleAccounts) {
+      if (!account?.account_id) continue
+      const accountId = stripMetaAccountPrefix(account.account_id)
+      uniqueAccounts.set(accountId, {
+        accountId,
+        accountName: account.name,
+      })
+    }
+
+    if (!uniqueAccounts.has(configuredAccountId)) {
+      uniqueAccounts.set(configuredAccountId, { accountId: configuredAccountId })
+    }
+
+    accountsToSync = Array.from(uniqueAccounts.values())
+  } catch (error: any) {
+    logger.warn('Failed to list accessible Meta ad accounts, falling back to configured account', {
+      accountId: configuredAccountId,
+      error: error?.originalError?.message || error?.message || error,
+    })
+    accountsToSync = [{ accountId: configuredAccountId }]
+  }
+
+  if (accountsToSync.length === 0) {
+    accountsToSync = [{ accountId: configuredAccountId }]
+  }
+
+  const campaignMetadata: MetaCampaignMetadata[] = []
+  const insightsData: MetaCampaignInsight[] = []
+  const partialFailures: Array<{ accountId: string; error: string }> = []
+
+  for (const sourceAccount of accountsToSync) {
+    try {
+      const accountData = await fetchMetaCampaignDataForAccount(config, sourceAccount, dateRange)
+      campaignMetadata.push(...accountData.campaignMetadata)
+      insightsData.push(...accountData.insightsData)
+    } catch (error: any) {
+      const errorMessage =
+        error?.originalError?.message ||
+        error?.message ||
+        'Unknown Meta account sync error'
+      partialFailures.push({ accountId: sourceAccount.accountId, error: errorMessage })
+      logger.error('Failed Meta campaign fetch for ad account; continuing', {
+        accountId: sourceAccount.accountId,
+        error: errorMessage,
+      })
+    }
+  }
+
+  if (campaignMetadata.length === 0 && partialFailures.length > 0) {
+    throw new Error(`Meta campaign sync failed for all accounts: ${partialFailures[0].error}`)
+  }
+
+  logAPISuccess('meta_ads', 'fetchCampaigns', {
+    mode: 'multi_account',
+    accountCount: accountsToSync.length,
+    campaignCount: campaignMetadata.length,
+    insightsCount: insightsData.length,
+    partialFailures: partialFailures.length,
+  })
+
+  if (partialFailures.length > 0) {
+    logger.warn('Meta campaign sync completed with partial failures', {
+      partialFailures,
+    })
+  }
+
+  return { campaignMetadata, insightsData, dateRange, partialFailures }
 }
 
 export function transformMetaAdsData(apiData: {
-  campaignMetadata: Array<{
-    id: string
-    name: string
-    status: string
-    daily_budget?: string
-    objective?: string
-  }>
-  insightsData: Array<{
-    campaign_id: string
-    campaign_name: string
-    objective?: string
-    impressions?: string
-    clicks?: string
-    spend?: string
-    actions?: Array<{ action_type: string; value: string }>
-    action_values?: Array<{ action_type: string; value: string }>
-    date_start?: string
-    date_stop?: string
-  }>
+  campaignMetadata: MetaCampaignMetadata[]
+  insightsData: MetaCampaignInsight[]
   dateRange: { since: string; until: string }
 }) {
   const campaigns: any[] = []
   const metrics: any[] = []
 
-  const metadataById = new Map(
-    apiData.campaignMetadata.map((campaign) => [campaign.id, campaign])
-  )
+  const metadataById = new Map<string, MetaCampaignMetadata>()
+  apiData.campaignMetadata.forEach((campaign) => {
+    const sourceAccountId = stripMetaAccountPrefix(campaign.source_account_id || '')
+    metadataById.set(`${sourceAccountId}:${campaign.id}`, campaign)
+  })
 
   const seenCampaigns = new Set<string>()
 
   apiData.insightsData.forEach((insight) => {
-    if (!seenCampaigns.has(insight.campaign_id)) {
-      const meta = metadataById.get(insight.campaign_id)
+    const sourceAccountId = stripMetaAccountPrefix(insight.source_account_id || '')
+    const namespacedCampaignId = buildMetaCampaignId(sourceAccountId, insight.campaign_id)
+    const meta = metadataById.get(`${sourceAccountId}:${insight.campaign_id}`)
+
+    if (!seenCampaigns.has(namespacedCampaignId)) {
 
       campaigns.push({
-        campaign_id: insight.campaign_id,
+        campaign_id: namespacedCampaignId,
         campaign_name: insight.campaign_name,
         platform: 'meta_ads',
         status: normalizeMetaStatus(meta?.status || 'UNKNOWN'),
         budget_amount: meta?.daily_budget ? parseFloat(meta.daily_budget) / 100 : null,
         objective: insight.objective || meta?.objective || null,
+        customer_id: sourceAccountId || null,
+        customer_name: insight.source_account_name || meta?.source_account_name || null,
+        raw_campaign_id: insight.campaign_id,
       })
 
-      seenCampaigns.add(insight.campaign_id)
+      seenCampaigns.add(namespacedCampaignId)
     }
 
     const purchaseAction = insight.actions?.find(
@@ -261,7 +426,7 @@ export function transformMetaAdsData(apiData: {
     )
 
     metrics.push({
-      campaign_api_id: insight.campaign_id,
+      campaign_api_id: namespacedCampaignId,
       date: insight.date_stop || apiData.dateRange.until,
       impressions: insight.impressions ? parseInt(insight.impressions, 10) : 0,
       clicks: insight.clicks ? parseInt(insight.clicks, 10) : 0,
@@ -273,18 +438,23 @@ export function transformMetaAdsData(apiData: {
 
   // Include campaigns with zero recent delivery so they still appear in dashboard state.
   for (const metaCampaign of apiData.campaignMetadata) {
-    if (seenCampaigns.has(metaCampaign.id)) continue
+    const sourceAccountId = stripMetaAccountPrefix(metaCampaign.source_account_id || '')
+    const namespacedCampaignId = buildMetaCampaignId(sourceAccountId, metaCampaign.id)
+    if (seenCampaigns.has(namespacedCampaignId)) continue
 
     campaigns.push({
-      campaign_id: metaCampaign.id,
+      campaign_id: namespacedCampaignId,
       campaign_name: metaCampaign.name,
       platform: 'meta_ads',
       status: normalizeMetaStatus(metaCampaign.status || 'UNKNOWN'),
       budget_amount: metaCampaign.daily_budget ? parseFloat(metaCampaign.daily_budget) / 100 : null,
       objective: metaCampaign.objective || null,
+      customer_id: sourceAccountId || null,
+      customer_name: metaCampaign.source_account_name || null,
+      raw_campaign_id: metaCampaign.id,
     })
 
-    seenCampaigns.add(metaCampaign.id)
+    seenCampaigns.add(namespacedCampaignId)
   }
 
   return { campaigns, metrics }

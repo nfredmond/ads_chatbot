@@ -421,12 +421,13 @@ if (campaignsError) {
 
 async function syncMetaAdsData(supabase: any, account: any, tenantId: string, tokens: any) {
   const { 
-    fetchMetaAdsCampaigns, 
+    fetchMetaAdsCampaignsAggregated, 
     transformMetaAdsData,
     fetchMetaAdsAdSets,
     transformMetaAdsAdSetData,
     fetchMetaAdsAds,
-    transformMetaAdsAdData
+    transformMetaAdsAdData,
+    buildMetaCampaignId
   } = await import('@/lib/meta-ads/client')
 
   if (!tokens?.accessToken) {
@@ -447,7 +448,7 @@ async function syncMetaAdsData(supabase: any, account: any, tenantId: string, to
     // ============================================
     // 1. FETCH AND STORE CAMPAIGNS
     // ============================================
-    const apiData = await fetchMetaAdsCampaigns(config)
+    const apiData = await fetchMetaAdsCampaignsAggregated(config)
     const { campaigns: campaignData, metrics: metricsData } = transformMetaAdsData(apiData)
 
     if (campaignData.length === 0) {
@@ -456,7 +457,14 @@ async function syncMetaAdsData(supabase: any, account: any, tenantId: string, to
     }
 
     const campaignsToInsert = campaignData.map((c: any) => ({
-      ...c,
+      campaign_id: c.campaign_id,
+      campaign_name: c.campaign_name,
+      platform: c.platform,
+      status: c.status,
+      budget_amount: c.budget_amount,
+      objective: c.objective,
+      customer_id: c.customer_id || null,
+      customer_name: c.customer_name || null,
       tenant_id: tenantId,
       ad_account_id: account.id,
     }))
@@ -469,6 +477,12 @@ async function syncMetaAdsData(supabase: any, account: any, tenantId: string, to
     if (campaignsError) {
       logger.error('Failed to insert Meta Ads campaigns', { error: campaignsError })
       throw new Error(`Failed to save campaigns: ${campaignsError.message}`)
+    }
+
+    if (Array.isArray((apiData as any)?.partialFailures) && (apiData as any).partialFailures.length > 0) {
+      logger.warn('Meta Ads campaign sync finished with partial account failures', {
+        failures: (apiData as any).partialFailures,
+      })
     }
 
     const campaignIdMap = new Map<string, string>(
@@ -501,6 +515,7 @@ async function syncMetaAdsData(supabase: any, account: any, tenantId: string, to
     let adSetsInserted = 0
     let adSetMetricsInserted = 0
     const adSetIdMap = new Map<string, string>()
+    const primaryMetaAccountId = String(account.account_id || '').replace(/^act_/, '')
 
     try {
       const adSetApiData = await fetchMetaAdsAdSets(config)
@@ -509,7 +524,10 @@ async function syncMetaAdsData(supabase: any, account: any, tenantId: string, to
       if (adSetData.length > 0) {
         const adSetsToInsert = adSetData
           .map((as: any) => {
-            const dbCampaignId = campaignIdMap.get(as.campaign_api_id)
+            const namespacedCampaignApiId = buildMetaCampaignId(primaryMetaAccountId, as.campaign_api_id)
+            const dbCampaignId =
+              campaignIdMap.get(namespacedCampaignApiId) ||
+              campaignIdMap.get(as.campaign_api_id)
             if (!dbCampaignId) return null
             const { campaign_api_id, ...adSetRecord } = as
             return { ...adSetRecord, tenant_id: tenantId, campaign_id: dbCampaignId }
