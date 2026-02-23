@@ -164,7 +164,7 @@ export async function fetchMetaAdsCampaigns(config: MetaAdsConfig) {
   // Fetch insights at campaign level as recommended by Meta
   const insightsParams = new URLSearchParams({
     fields:
-      'campaign_id,campaign_name,campaign_status,objective,impressions,clicks,spend,actions,action_values,date_start,date_stop',
+      'campaign_id,campaign_name,objective,impressions,clicks,spend,actions,action_values,date_start,date_stop',
     level: 'campaign',
     time_range: JSON.stringify({ since, until }),
     action_attribution_windows: JSON.stringify(['1d_click', '7d_click']),
@@ -185,7 +185,6 @@ export async function fetchMetaAdsCampaigns(config: MetaAdsConfig) {
     return await fetchAllPages<{
       campaign_id: string
       campaign_name: string
-      campaign_status: string
       objective?: string
       impressions?: string
       clicks?: string
@@ -216,7 +215,6 @@ export function transformMetaAdsData(apiData: {
   insightsData: Array<{
     campaign_id: string
     campaign_name: string
-    campaign_status: string
     objective?: string
     impressions?: string
     clicks?: string
@@ -245,7 +243,7 @@ export function transformMetaAdsData(apiData: {
         campaign_id: insight.campaign_id,
         campaign_name: insight.campaign_name,
         platform: 'meta_ads',
-        status: normalizeMetaStatus(insight.campaign_status || meta?.status || 'UNKNOWN'),
+        status: normalizeMetaStatus(meta?.status || 'UNKNOWN'),
         budget_amount: meta?.daily_budget ? parseFloat(meta.daily_budget) / 100 : null,
         objective: insight.objective || meta?.objective || null,
       })
