@@ -29,7 +29,9 @@ import {
   AlertCircle,
   FileDown,
   FileSpreadsheet,
-  HelpCircle
+  HelpCircle,
+  Minimize2,
+  Maximize2
 } from 'lucide-react';
 
 // Tooltip definitions for marketing metrics
@@ -384,6 +386,7 @@ export default function DashboardPage() {
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   const [showCustomerPicker, setShowCustomerPicker] = useState(false);
   const [showMetaDuplicates, setShowMetaDuplicates] = useState(false);
+  const [compactMode, setCompactMode] = useState(false);
   
   const datePickerRef = useRef<HTMLDivElement>(null);
   const accountPickerRef = useRef<HTMLDivElement>(null);
@@ -710,7 +713,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className={compactMode ? 'space-y-4' : 'space-y-6'}>
       {/* Demo Mode Banner */}
       {isDemoMode && (
         <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 flex items-center justify-between">
@@ -738,6 +741,15 @@ export default function DashboardPage() {
         
         {/* Filters & Export */}
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setCompactMode((prev) => !prev)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-sm"
+            title={compactMode ? 'Disable compact mode' : 'Enable compact mode'}
+          >
+            {compactMode ? <Maximize2 className="w-4 h-4 text-gray-400" /> : <Minimize2 className="w-4 h-4 text-gray-400" />}
+            <span>{compactMode ? 'Comfortable' : 'Compact'}</span>
+          </button>
+
           {/* Export Button */}
           <ExportDropdown
             onExportPDF={handleExportPDF}
@@ -849,13 +861,13 @@ export default function DashboardPage() {
       </div>
 
       {/* Key Metrics Grid - Clickable */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        <MetricCard title="Total Spend" value={formatCurrency(metrics.totalSpend)} icon={DollarSign} color="blue" href="/dashboard/metrics/spend" />
-        <MetricCard title="Revenue" value={formatCurrency(metrics.totalRevenue)} icon={TrendingUp} color="emerald" href="/dashboard/metrics/revenue" />
-        <MetricCard title="ROAS" value={`${metrics.averageROAS.toFixed(1)}x`} icon={Target} color="purple" subtitle={metrics.averageROAS >= 3 ? 'Excellent' : metrics.averageROAS >= 2 ? 'Good' : 'Needs Work'} href="/dashboard/metrics/roas" />
-        <MetricCard title="Conversions" value={formatNumber(metrics.totalConversions)} icon={MousePointerClick} color="amber" href="/dashboard/metrics/conversions" />
-        <MetricCard title="CTR" value={formatPercent(metrics.ctr)} icon={Percent} color="cyan" subtitle={metrics.ctr >= 2 ? 'Above Avg' : 'Below Avg'} href="/dashboard/metrics/ctr" />
-        <MetricCard title="Avg CPC" value={formatCurrency(metrics.cpc)} icon={DollarSign} color="pink" href="/dashboard/metrics/cpc" />
+      <div className={`grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 ${compactMode ? 'gap-2' : 'gap-3'}`}>
+        <MetricCard title="Total Spend" value={formatCurrency(metrics.totalSpend)} icon={DollarSign} color="blue" href="/dashboard/metrics/spend" compact={compactMode} />
+        <MetricCard title="Revenue" value={formatCurrency(metrics.totalRevenue)} icon={TrendingUp} color="emerald" href="/dashboard/metrics/revenue" compact={compactMode} />
+        <MetricCard title="ROAS" value={`${metrics.averageROAS.toFixed(1)}x`} icon={Target} color="purple" subtitle={metrics.averageROAS >= 3 ? 'Excellent' : metrics.averageROAS >= 2 ? 'Good' : 'Needs Work'} href="/dashboard/metrics/roas" compact={compactMode} />
+        <MetricCard title="Conversions" value={formatNumber(metrics.totalConversions)} icon={MousePointerClick} color="amber" href="/dashboard/metrics/conversions" compact={compactMode} />
+        <MetricCard title="CTR" value={formatPercent(metrics.ctr)} icon={Percent} color="cyan" subtitle={metrics.ctr >= 2 ? 'Above Avg' : 'Below Avg'} href="/dashboard/metrics/ctr" compact={compactMode} />
+        <MetricCard title="Avg CPC" value={formatCurrency(metrics.cpc)} icon={DollarSign} color="pink" href="/dashboard/metrics/cpc" compact={compactMode} />
       </div>
 
       {/* Secondary Metrics */}
@@ -1069,7 +1081,7 @@ export default function DashboardPage() {
                     <td className="py-3 pr-4">
                       <Link href={`/dashboard/clients/${customer.customer_id}`} className="flex items-center gap-2 hover:text-purple-400 transition-colors">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                        <span className="font-medium">{customer.customer_name}</span>
+                        <span className="font-medium truncate max-w-[220px] md:max-w-none">{customer.customer_name}</span>
                         {customer.roas >= metrics.averageROAS * 1.5 && <Award className="w-4 h-4 text-yellow-400" />}
                       </Link>
                     </td>
@@ -1180,13 +1192,14 @@ export default function DashboardPage() {
 }
 
 // Metric Card Component - Clickable with Tooltip
-function MetricCard({ title, value, icon: Icon, color, subtitle, href }: {
+function MetricCard({ title, value, icon: Icon, color, subtitle, href, compact = false }: {
   title: string;
   value: string;
   icon: any;
   color: string;
   subtitle?: string;
   href?: string;
+  compact?: boolean;
 }) {
   const colorClasses: Record<string, string> = {
     blue: 'from-blue-500/20 to-blue-600/5 border-blue-500/20 hover:border-blue-400/40',
@@ -1210,28 +1223,28 @@ function MetricCard({ title, value, icon: Icon, color, subtitle, href }: {
 
   const content = (
     <>
-      <div className="flex items-center justify-between mb-2">
+      <div className={`flex items-center justify-between ${compact ? 'mb-1' : 'mb-2'}`}>
         <span className="text-xs text-gray-400 inline-flex items-center">
           {title}
           {tooltip && <InfoTooltip text={tooltip} />}
         </span>
         <Icon className={`w-4 h-4 ${iconColors[color]}`} />
       </div>
-      <p className="text-xl font-bold">{value}</p>
-      {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
+      <p className={`${compact ? 'text-lg' : 'text-xl'} font-bold whitespace-nowrap`}>{value}</p>
+      {subtitle && <p className="text-xs text-gray-500 mt-1 truncate">{subtitle}</p>}
     </>
   );
 
   if (href) {
     return (
-      <Link href={href} className={`block p-4 rounded-xl bg-gradient-to-br ${colorClasses[color]} border transition-colors cursor-pointer`}>
+      <Link href={href} className={`block ${compact ? 'p-3' : 'p-4'} rounded-xl bg-gradient-to-br ${colorClasses[color]} border transition-colors cursor-pointer`}>
         {content}
       </Link>
     );
   }
 
   return (
-    <div className={`p-4 rounded-xl bg-gradient-to-br ${colorClasses[color]} border`}>
+    <div className={`${compact ? 'p-3' : 'p-4'} rounded-xl bg-gradient-to-br ${colorClasses[color]} border`}>
       {content}
     </div>
   );
