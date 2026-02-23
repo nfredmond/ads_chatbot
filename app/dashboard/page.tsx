@@ -253,6 +253,11 @@ interface DashboardData {
     totalCampaigns: number;
     activeCampaigns: number;
     duplicateNameCount: number;
+    duplicateCampaigns: Array<{
+      customerName: string;
+      campaignName: string;
+      count: number;
+    }>;
   };
 }
 
@@ -347,6 +352,11 @@ const DEMO_DATA: DashboardData = {
     totalCampaigns: 80,
     activeCampaigns: 7,
     duplicateNameCount: 6,
+    duplicateCampaigns: [
+      { customerName: 'UncommonGood', campaignName: '[03/08/2022] Promoting https://uncommongood.io/fundraisers/standwithukraine', count: 2 },
+      { customerName: 'UncommonGood', campaignName: '[03/01/2022] Promoting https://uncommongood.io/sweepstakes/glamping-safari-style', count: 2 },
+      { customerName: 'Borderlands Bakery', campaignName: 'Abandoned Cart Retargetting', count: 2 },
+    ],
   },
 };
 
@@ -373,6 +383,7 @@ export default function DashboardPage() {
   const [availableCustomers, setAvailableCustomers] = useState<CustomerOption[]>([]);
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   const [showCustomerPicker, setShowCustomerPicker] = useState(false);
+  const [showMetaDuplicates, setShowMetaDuplicates] = useState(false);
   
   const datePickerRef = useRef<HTMLDivElement>(null);
   const accountPickerRef = useRef<HTMLDivElement>(null);
@@ -440,14 +451,21 @@ export default function DashboardPage() {
           const activeMetaCampaigns = metaCampaigns.filter((c: any) => String(c.status || '').toLowerCase() === 'active');
           const duplicateMetaKeys = new Set<string>();
           const seenMetaKeys = new Set<string>();
+          const duplicateMetaMap = new Map<string, { customerName: string; campaignName: string; count: number }>();
           for (const campaign of metaCampaigns) {
-            const key = `${campaign.customer_name || campaign.customer_id || 'unknown'}::${String(campaign.campaign_name || '').trim().toLowerCase()}`;
+            const customerName = campaign.customer_name || campaign.customer_id || 'Unknown';
+            const campaignName = String(campaign.campaign_name || '').trim();
+            const key = `${customerName}::${campaignName.toLowerCase()}`;
             if (seenMetaKeys.has(key)) {
               duplicateMetaKeys.add(key);
+              const existing = duplicateMetaMap.get(key) || { customerName, campaignName, count: 1 };
+              existing.count += 1;
+              duplicateMetaMap.set(key, existing);
             } else {
               seenMetaKeys.add(key);
             }
           }
+          const duplicateMetaCampaigns = Array.from(duplicateMetaMap.values()).sort((a, b) => b.count - a.count || a.customerName.localeCompare(b.customerName));
 
           const dashboardData: DashboardData = {
             metrics: {
@@ -480,6 +498,7 @@ export default function DashboardPage() {
               totalCampaigns: metaCampaigns.length,
               activeCampaigns: activeMetaCampaigns.length,
               duplicateNameCount: duplicateMetaKeys.size,
+              duplicateCampaigns: duplicateMetaCampaigns,
             },
           };
           setData(dashboardData);
@@ -900,13 +919,56 @@ export default function DashboardPage() {
             </div>
             <p className="text-xl font-bold text-emerald-200">{displayData.metaSummary.activeCampaigns}</p>
           </div>
-          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+          <button
+            onClick={() => setShowMetaDuplicates((prev) => !prev)}
+            className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:border-amber-400/40 transition-colors text-left"
+          >
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs text-gray-300">Possible Duplicate Names</span>
               <AlertTriangle className="w-4 h-4 text-amber-300" />
             </div>
             <p className="text-xl font-bold text-amber-200">{displayData.metaSummary.duplicateNameCount}</p>
+            <p className="text-[11px] text-amber-300/80 mt-1">Click to {showMetaDuplicates ? 'hide' : 'view'} duplicate details</p>
+          </button>
+        </div>
+      )}
+
+      {/* Meta Duplicate Campaigns Detail */}
+      {connectedPlatforms.meta && displayData.metaSummary && showMetaDuplicates && (
+        <div className="p-6 rounded-xl bg-amber-500/10 border border-amber-500/20">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-amber-300">Meta Duplicate Campaign Names</h3>
+            <button
+              onClick={() => setShowMetaDuplicates(false)}
+              className="text-xs px-2 py-1 rounded bg-black/20 hover:bg-black/30 text-amber-100"
+            >
+              Close
+            </button>
           </div>
+          {displayData.metaSummary.duplicateCampaigns.length === 0 ? (
+            <p className="text-sm text-gray-300">No duplicate campaign names detected.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-left text-xs text-gray-300 border-b border-amber-500/20">
+                    <th className="pb-2 pr-4">Account</th>
+                    <th className="pb-2 px-4">Campaign Name</th>
+                    <th className="pb-2 pl-4 text-right">Count</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayData.metaSummary.duplicateCampaigns.map((dup, idx) => (
+                    <tr key={`${dup.customerName}-${dup.campaignName}-${idx}`} className="border-b border-white/5">
+                      <td className="py-2 pr-4 text-sm">{dup.customerName}</td>
+                      <td className="py-2 px-4 text-sm text-gray-200">{dup.campaignName}</td>
+                      <td className="py-2 pl-4 text-right font-mono text-sm">{dup.count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
