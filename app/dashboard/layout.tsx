@@ -217,8 +217,8 @@ export default function DashboardLayout({
                 <div className="w-10 h-10 rounded-full bg-purple-500/30 border border-purple-500/50 flex items-center justify-center">
                   <span className="text-purple-300 font-semibold">{userInitial}</span>
                 </div>
-                <div className="flex-1 text-left">
-                  <p className="text-sm font-medium truncate">{displayEmail}</p>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-sm font-medium truncate" title={displayEmail}>{displayEmail}</p>
                   <p className="text-xs text-gray-500">Logged in</p>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
@@ -228,7 +228,7 @@ export default function DashboardLayout({
               {showUserMenu && (
                 <div className="absolute bottom-full left-0 right-0 mb-2 bg-gray-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50">
                   <div className="p-3 border-b border-white/10">
-                    <p className="text-sm font-medium">{displayEmail}</p>
+                    <p className="text-sm font-medium break-all">{displayEmail}</p>
                     <p className="text-xs text-gray-500">Account</p>
                   </div>
                   <Link
