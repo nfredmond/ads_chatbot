@@ -22,8 +22,8 @@ function normalizeCustomerId(rawId?: string): string {
   return String(rawId || '').replace(/\D/g, '')
 }
 
-function withGoogleAuthHeaders(config: GoogleAdsConfig, accessToken: string) {
-  const normalizedLoginId = normalizeCustomerId(config.loginCustomerId)
+function withGoogleAuthHeaders(config: GoogleAdsConfig, accessToken: string, loginCustomerIdOverride?: string) {
+  const normalizedLoginId = normalizeCustomerId(loginCustomerIdOverride || config.loginCustomerId)
 
   return {
     'Content-Type': 'application/json',
@@ -91,6 +91,8 @@ export async function fetchGoogleAdsCampaigns(config: GoogleAdsConfig) {
   // Google Ads API uses GAQL (Google Ads Query Language)
   const query = `
     SELECT
+      customer.id,
+      customer.descriptive_name,
       campaign.id,
       campaign.name,
       campaign.status,
@@ -114,31 +116,93 @@ export async function fetchGoogleAdsCampaigns(config: GoogleAdsConfig) {
     config.refreshToken
   )
 
-  const endpoint = `https://googleads.googleapis.com/v21/customers/${normalizedCustomerId}/googleAds:search`
+  const executeSearch = async (customerId: string, loginCustomerId?: string) => {
+    const endpoint = `https://googleads.googleapis.com/v21/customers/${customerId}/googleAds:search`
 
-  const data = await withRateLimit('google_ads', async () => {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: withGoogleAuthHeaders(config, accessToken),
-      // NOTE: Google Ads Search endpoint no longer supports custom pageSize.
-      body: JSON.stringify({ query }),
+    return withRateLimit('google_ads', async () => {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: withGoogleAuthHeaders(config, accessToken, loginCustomerId),
+        body: JSON.stringify({ query }),
+      })
+
+      const responseData = await response.json()
+
+      if (!response.ok) {
+        const error = responseData.error?.message || 'Unknown Google Ads API error'
+        throw new PlatformAPIError(
+          'google_ads',
+          'fetchCampaigns',
+          new Error(error),
+          response.status,
+          responseData.error?.code?.toString()
+        )
+      }
+
+      return responseData
+    })
+  }
+
+  const listAccessibleCustomerIds = async (loginCustomerId?: string): Promise<string[]> => {
+    const response = await fetch('https://googleads.googleapis.com/v21/customers:listAccessibleCustomers', {
+      method: 'GET',
+      headers: withGoogleAuthHeaders(config, accessToken, loginCustomerId),
     })
 
     const responseData = await response.json()
-
     if (!response.ok) {
-      const error = responseData.error?.message || 'Unknown Google Ads API error'
-      throw new PlatformAPIError(
-        'google_ads',
-        'fetchCampaigns',
-        new Error(error),
-        response.status,
-        responseData.error?.code?.toString()
-      )
+      const error = responseData.error?.message || 'Failed to list accessible customers'
+      throw new PlatformAPIError('google_ads', 'listAccessibleCustomers', new Error(error), response.status)
     }
 
-    return responseData
+    const resourceNames = Array.isArray(responseData?.resourceNames) ? responseData.resourceNames : []
+    return resourceNames
+      .map((name: string) => name.split('/').pop() || '')
+      .map((id: string) => normalizeCustomerId(id))
+      .filter((id: string) => !!id)
+  }
+
+  const mergeResults = (datasets: any[]) => ({
+    results: datasets.flatMap((d) => (Array.isArray(d?.results) ? d.results : [])),
   })
+
+  let data: any
+
+  try {
+    data = await executeSearch(normalizedCustomerId)
+  } catch (error: any) {
+    const msg = error?.originalError?.message || error?.message || ''
+    const managerMetricsError = msg.includes('Metrics cannot be requested for a manager account') || msg.includes('Request contains an invalid argument')
+
+    if (!managerMetricsError) {
+      throw error
+    }
+
+    logger.info('Manager account detected; querying accessible client accounts', {
+      managerCustomerId: normalizedCustomerId,
+    })
+
+    const accessibleCustomerIds = await listAccessibleCustomerIds(normalizedCustomerId)
+    const clientIds = accessibleCustomerIds.filter((id) => id !== normalizedCustomerId)
+
+    if (clientIds.length === 0) {
+      throw new Error('No accessible client accounts found under manager account')
+    }
+
+    const datasets: any[] = []
+    for (const clientId of clientIds) {
+      try {
+        const result = await executeSearch(clientId, normalizedCustomerId)
+        datasets.push(result)
+      } catch (clientError: any) {
+        logger.error(`Failed campaign fetch for client ${clientId}`, {
+          error: clientError?.message || clientError,
+        })
+      }
+    }
+
+    data = mergeResults(datasets)
+  }
 
   const resultCount = Array.isArray(data?.results) ? data.results.length : 0
   logAPISuccess('google_ads', 'fetchCampaigns', { resultCount })
@@ -156,11 +220,14 @@ export function transformGoogleAdsData(apiData: any) {
 
   rows.forEach((row: any) => {
     const campaign = row?.campaign
+    const customer = row?.customer
     if (!campaign?.id) {
       return
     }
 
-    const campaignId = campaign.id.toString()
+    const rawCampaignId = campaign.id.toString()
+    const customerId = customer?.id ? String(customer.id) : undefined
+    const campaignId = customerId ? `${customerId}_${rawCampaignId}` : rawCampaignId
 
     if (!campaignMap.has(campaignId)) {
       const budgetMicros = row?.campaignBudget?.amountMicros
@@ -171,6 +238,8 @@ export function transformGoogleAdsData(apiData: any) {
         platform: 'google_ads',
         status: normalizeGoogleStatus(campaign.status),
         budget_amount: budgetMicros ? Number(budgetMicros) / 1_000_000 : null,
+        customer_id: customerId || null,
+        customer_name: customer?.descriptiveName || null,
       })
     }
 
