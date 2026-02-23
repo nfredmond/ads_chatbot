@@ -19,6 +19,7 @@ const LINKEDIN_API_BASE = 'https://api.linkedin.com'
 export interface LinkedInAdsConfig {
   accessToken: string
   apiVersion?: string
+  accountId?: string
 }
 
 function normalizeLinkedInId(value: unknown): string {
@@ -157,14 +158,22 @@ export async function fetchLinkedInAdsCampaigns(config: LinkedInAdsConfig) {
     throw new Error('No LinkedIn ad accounts found. Ensure the access token has the required Marketing API permissions.')
   }
 
-  const adAccountId = accountsData.elements[0]?.id
-  if (!adAccountId) {
+  const requestedAccountId = normalizeLinkedInId(config.accountId)
+
+  const selectedAccount = requestedAccountId
+    ? accountsData.elements.find((account: any) => normalizeLinkedInId(account.id) === requestedAccountId)
+    : accountsData.elements[0]
+
+  if (!selectedAccount?.id) {
+    if (requestedAccountId) {
+      throw new Error(`LinkedIn ad account ${requestedAccountId} was not found for this token. Reconnect LinkedIn or select the correct account.`)
+    }
     throw new Error('Invalid LinkedIn ad account ID in response')
   }
 
   // Step 2: Fetch campaigns for the ad account
   // Build URN properly - account ID can be URN or numeric in API responses.
-  const accountUrn = toLinkedInUrn('sponsoredAccount', adAccountId)
+  const accountUrn = toLinkedInUrn('sponsoredAccount', selectedAccount.id)
   
   const campaignsUrl = `${LINKEDIN_API_BASE}/rest/adCampaigns?q=search&search=(account:(values:List(${accountUrn})))&count=100`
   

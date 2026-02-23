@@ -213,7 +213,7 @@ async function syncGoogleAdsData(supabase: any, account: any, tenantId: string, 
     refreshToken: tokens.refreshToken,
     // If login_customer_id is not configured, fall back to customerId.
     // This is especially important for MCC/manager account setups.
-    loginCustomerId: normalizedLoginCustomerId || undefined,
+    loginCustomerId: normalizedLoginCustomerId || normalizedCustomerId,
   }
 
   // ============================================
@@ -648,6 +648,7 @@ async function syncLinkedInAdsData(supabase: any, account: any, tenantId: string
 
   const config = {
     accessToken: tokens.accessToken,
+    accountId: account.account_id,
     apiVersion: account.metadata?.api_version || '202505',
   }
 
