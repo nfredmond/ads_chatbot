@@ -249,6 +249,11 @@ interface DashboardData {
     metric?: string;
     value?: string;
   }>;
+  metaSummary?: {
+    totalCampaigns: number;
+    activeCampaigns: number;
+    duplicateNameCount: number;
+  };
 }
 
 // Comprehensive demo data with realistic client portfolio
@@ -338,6 +343,11 @@ const DEMO_DATA: DashboardData = {
       platform: 'Google Ads',
     },
   ],
+  metaSummary: {
+    totalCampaigns: 80,
+    activeCampaigns: 7,
+    duplicateNameCount: 6,
+  },
 };
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316'];
@@ -425,6 +435,20 @@ export default function DashboardPage() {
         }
         
         if (hasData) {
+          const allCampaigns = Array.isArray(result.campaigns) ? result.campaigns : [];
+          const metaCampaigns = allCampaigns.filter((c: any) => c.platform === 'meta_ads');
+          const activeMetaCampaigns = metaCampaigns.filter((c: any) => String(c.status || '').toLowerCase() === 'active');
+          const duplicateMetaKeys = new Set<string>();
+          const seenMetaKeys = new Set<string>();
+          for (const campaign of metaCampaigns) {
+            const key = `${campaign.customer_name || campaign.customer_id || 'unknown'}::${String(campaign.campaign_name || '').trim().toLowerCase()}`;
+            if (seenMetaKeys.has(key)) {
+              duplicateMetaKeys.add(key);
+            } else {
+              seenMetaKeys.add(key);
+            }
+          }
+
           const dashboardData: DashboardData = {
             metrics: {
               totalSpend: result.metrics?.totalSpend || 0,
@@ -452,6 +476,11 @@ export default function DashboardPage() {
             customerMetrics: result.customerMetrics || [],
             connectedPlatforms: result.connectedPlatforms || { google: false, meta: false, linkedin: false },
             insights: result.insights || [],
+            metaSummary: {
+              totalCampaigns: metaCampaigns.length,
+              activeCampaigns: activeMetaCampaigns.length,
+              duplicateNameCount: duplicateMetaKeys.size,
+            },
           };
           setData(dashboardData);
         } else {
@@ -853,6 +882,33 @@ export default function DashboardPage() {
           <p className="text-xl font-bold">{sortedCustomers.length}</p>
         </div>
       </div>
+
+      {/* Meta Ops Snapshot */}
+      {connectedPlatforms.meta && displayData.metaSummary && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="p-4 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/20">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-300">Meta Campaigns (Total)</span>
+              <BarChart3 className="w-4 h-4 text-fuchsia-300" />
+            </div>
+            <p className="text-xl font-bold text-fuchsia-200">{displayData.metaSummary.totalCampaigns}</p>
+          </div>
+          <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-300">Meta Campaigns (Active)</span>
+              <Check className="w-4 h-4 text-emerald-300" />
+            </div>
+            <p className="text-xl font-bold text-emerald-200">{displayData.metaSummary.activeCampaigns}</p>
+          </div>
+          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-300">Possible Duplicate Names</span>
+              <AlertTriangle className="w-4 h-4 text-amber-300" />
+            </div>
+            <p className="text-xl font-bold text-amber-200">{displayData.metaSummary.duplicateNameCount}</p>
+          </div>
+        </div>
+      )}
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
