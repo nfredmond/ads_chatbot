@@ -318,6 +318,29 @@ export async function POST(request: NextRequest) {
         status: c.status,
       }));
 
+    const activeCampaignsByPlatform = campaigns.reduce((acc: Record<string, number>, c: any) => {
+      const isActive = String(c.status || '').toLowerCase() === 'active';
+      if (isActive) {
+        acc[c.platform] = (acc[c.platform] || 0) + 1;
+      }
+      return acc;
+    }, {});
+
+    const duplicateMetaCampaigns = Array.from(
+      metaCampaignInventory.reduce((acc: Map<string, { name: string; customer: string; count: number }>, c: any) => {
+        const key = `${c.customer}::${String(c.name || '').trim().toLowerCase()}`;
+        const existing = acc.get(key);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          acc.set(key, { name: c.name, customer: c.customer, count: 1 });
+        }
+        return acc;
+      }, new Map()).values()
+    )
+      .filter((x) => x.count > 1)
+      .sort((a, b) => b.count - a.count || a.customer.localeCompare(b.customer));
+
     console.log(`Chat API: User ${user?.id}, Tenant ${tenantId}, Accounts: ${adAccounts.length}, Campaigns: ${campaigns.length}, Metrics: ${recentMetrics.length}, Customers: ${customerMetrics.length}, AdGroups: ${adGroups.length}, Ads: ${ads.length}, DateRange: ${startDate || 'default'} to ${endDate || 'default'}, CustomerFilter: ${customers?.length || 'all'}`)
 
     // Build campaign platform map
@@ -481,10 +504,18 @@ ${platformBreakdown.length > 0 ? JSON.stringify(platformBreakdown, null, 2) : 'N
 CAMPAIGN INVENTORY COUNTS (all campaigns, including zero-spend):
 ${JSON.stringify(campaignsByPlatform, null, 2)}
 
+ACTIVE CAMPAIGN COUNTS (status=active):
+${JSON.stringify(activeCampaignsByPlatform, null, 2)}
+
 META CAMPAIGN INVENTORY (all Meta campaigns, not spend-limited):
 ${metaCampaignInventory.length > 0
   ? metaCampaignInventory.slice(0, 100).map((c: any, i: number) => `${i + 1}. ${c.name} (${c.customer}) [${c.status}]`).join('\n')
   : 'No Meta campaigns found in campaigns table'}
+
+POTENTIAL META DUPLICATES (same campaign name within same account):
+${duplicateMetaCampaigns.length > 0
+  ? duplicateMetaCampaigns.slice(0, 30).map((d: any) => `- ${d.customer}: "${d.name}" appears ${d.count} times`).join('\n')
+  : 'No obvious duplicates detected'}
 
 TOP CAMPAIGNS (by budget):
 ${JSON.stringify(
@@ -624,6 +655,8 @@ You should:
 - Explain metrics like ROAS, CTR, CPA, CPC, and conversions at each level
 - Compare platforms when asked
 - When asked "how many campaigns" for a platform, use CAMPAIGN INVENTORY COUNTS / platform inventory lists (not spend-ranked subsets)
+- When user asks for "current" or "live" campaigns, prioritize ACTIVE CAMPAIGN COUNTS and active-status campaign rows
+- Use POTENTIAL META DUPLICATES to suggest cleanup/consolidation opportunities
 - Be concise but thorough
 - Use specific numbers from their actual data - always cite real figures
 - If they have data, proactively highlight interesting patterns or concerns
