@@ -162,6 +162,37 @@ export async function fetchGoogleAdsCampaigns(config: GoogleAdsConfig) {
       .filter((id: string) => !!id)
   }
 
+  const listChildCustomerIdsFromManager = async (managerCustomerId: string): Promise<string[]> => {
+    const endpoint = `https://googleads.googleapis.com/v21/customers/${managerCustomerId}/googleAds:search`
+    const managerQuery = `
+      SELECT
+        customer_client.id,
+        customer_client.manager,
+        customer_client.level
+      FROM customer_client
+      WHERE customer_client.status = 'ENABLED'
+    `
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: withGoogleAuthHeaders(config, accessToken, managerCustomerId),
+      body: JSON.stringify({ query: managerQuery }),
+    })
+
+    const responseData = await response.json()
+    if (!response.ok) {
+      const error = responseData.error?.message || 'Failed to list manager child customers'
+      throw new PlatformAPIError('google_ads', 'listManagerChildren', new Error(error), response.status)
+    }
+
+    const rows = Array.isArray(responseData?.results) ? responseData.results : []
+    const ids = rows
+      .map((row: any) => normalizeCustomerId(row?.customerClient?.id))
+      .filter((id: string) => !!id && id !== managerCustomerId)
+
+    return Array.from(new Set(ids))
+  }
+
   const mergeResults = (datasets: any[]) => ({
     results: datasets.flatMap((d) => (Array.isArray(d?.results) ? d.results : [])),
   })
@@ -183,7 +214,13 @@ export async function fetchGoogleAdsCampaigns(config: GoogleAdsConfig) {
     })
 
     const accessibleCustomerIds = await listAccessibleCustomerIds(normalizedCustomerId)
-    const clientIds = accessibleCustomerIds.filter((id) => id !== normalizedCustomerId)
+    let clientIds = accessibleCustomerIds.filter((id) => id !== normalizedCustomerId)
+
+    // Fallback: some OAuth/user combinations return only manager IDs from listAccessibleCustomers.
+    // Query customer_client directly from the manager account to discover children.
+    if (clientIds.length === 0) {
+      clientIds = await listChildCustomerIdsFromManager(normalizedCustomerId)
+    }
 
     if (clientIds.length === 0) {
       throw new Error('No accessible client accounts found under manager account')
