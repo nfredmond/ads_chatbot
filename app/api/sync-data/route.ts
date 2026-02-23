@@ -651,10 +651,11 @@ async function syncMetaAdsData(supabase: any, account: any, tenantId: string, to
 
 async function syncLinkedInAdsData(supabase: any, account: any, tenantId: string, tokens: any) {
   const { 
-    fetchLinkedInAdsCampaigns, 
+    fetchLinkedInAdsCampaignsAggregated,
     transformLinkedInAdsData,
     fetchLinkedInCreatives,
-    transformLinkedInCreativeData
+    transformLinkedInCreativeData,
+    buildLinkedInCampaignId
   } = await import('@/lib/linkedin-ads/client')
   
   if (!tokens?.accessToken) {
@@ -674,14 +675,15 @@ async function syncLinkedInAdsData(supabase: any, account: any, tenantId: string
     // ============================================
     // 1. FETCH AND STORE CAMPAIGNS
     // ============================================
-    const apiData = await fetchLinkedInAdsCampaigns(config)
-    
-    if (!apiData || apiData.length === 0) {
+    const aggregatedApiData = await fetchLinkedInAdsCampaignsAggregated(config)
+    const apiCampaignData = aggregatedApiData?.campaigns || []
+
+    if (!apiCampaignData || apiCampaignData.length === 0) {
       logger.info('No LinkedIn campaigns found for this account')
       return { campaignsCount: 0, metricsCount: 0, adGroupsCount: 0, adsCount: 0 }
     }
     
-    const { campaigns: campaignData, metrics: metricsData } = transformLinkedInAdsData(apiData)
+    const { campaigns: campaignData, metrics: metricsData } = transformLinkedInAdsData(apiCampaignData)
 
     if (campaignData.length === 0) {
       logger.info('No LinkedIn Ads campaigns found for this account')
@@ -704,9 +706,29 @@ async function syncLinkedInAdsData(supabase: any, account: any, tenantId: string
       throw new Error(`Failed to save campaigns: ${campaignsError.message}`)
     }
 
-    const campaignIdMap = new Map<string, string>(
-      campaigns?.map((c: any): [string, string] => [c.campaign_id, c.id]) || []
-    )
+    if (Array.isArray((aggregatedApiData as any)?.partialFailures) && (aggregatedApiData as any).partialFailures.length > 0) {
+      logger.warn('LinkedIn Ads campaign sync finished with partial account failures', {
+        failures: (aggregatedApiData as any).partialFailures,
+      })
+    }
+
+    const campaignIdMap = new Map<string, string>()
+    const rawCampaignIdToDbCandidates = new Map<string, string[]>()
+    ;(campaigns || []).forEach((c: any) => {
+      campaignIdMap.set(c.campaign_id, c.id)
+      const namespacedMatch = String(c.campaign_id || '').match(/^linkedin:[^:]+:([^:]+)$/)
+      const rawCampaignId = namespacedMatch?.[1]
+      if (!rawCampaignId) return
+      const existing = rawCampaignIdToDbCandidates.get(rawCampaignId) || []
+      existing.push(c.id)
+      rawCampaignIdToDbCandidates.set(rawCampaignId, existing)
+    })
+
+    rawCampaignIdToDbCandidates.forEach((dbCampaignIds, rawCampaignId) => {
+      if (dbCampaignIds.length === 1) {
+        campaignIdMap.set(rawCampaignId, dbCampaignIds[0])
+      }
+    })
     const campaignApiIds = campaigns?.map((c: any) => c.campaign_id) || []
 
     // Insert campaign metrics
@@ -760,6 +782,15 @@ async function syncLinkedInAdsData(supabase: any, account: any, tenantId: string
         adGroups?.forEach((ag: any) => {
           const campaignApiId = ag.ad_group_id.replace('li_ag_', '')
           adGroupIdMap.set(campaignApiId, ag.id)
+          const namespacedMatch = String(campaignApiId || '').match(/^linkedin:[^:]+:([^:]+)$/)
+          if (namespacedMatch?.[1]) {
+            adGroupIdMap.set(namespacedMatch[1], ag.id)
+          } else {
+            const accountNamespacedCampaignId = buildLinkedInCampaignId(account.account_id, campaignApiId)
+            if (accountNamespacedCampaignId !== campaignApiId) {
+              adGroupIdMap.set(accountNamespacedCampaignId, ag.id)
+            }
+          }
         })
       }
       logger.info('LinkedIn pseudo ad groups created', { count: adGroupsInserted })

@@ -22,6 +22,16 @@ export interface LinkedInAdsConfig {
   accountId?: string
 }
 
+interface LinkedInAdAccountSummary {
+  id: string
+  name?: string
+}
+
+interface LinkedInPartialFailure {
+  accountId: string
+  error: string
+}
+
 function normalizeLinkedInId(value: unknown): string {
   if (value === null || value === undefined) return ''
   const str = String(value)
@@ -33,6 +43,23 @@ function toLinkedInUrn(entity: 'sponsoredAccount' | 'sponsoredCampaign' | 'spons
   const str = String(id || '')
   if (str.startsWith('urn:li:')) return str
   return `urn:li:${entity}:${normalizeLinkedInId(str)}`
+}
+
+function extractLinkedInCampaignIdParts(campaignId: unknown): { accountId: string; campaignId: string } | null {
+  const value = String(campaignId || '')
+  const match = value.match(/^linkedin:([^:]+):([^:]+)$/)
+  if (!match) return null
+  return {
+    accountId: normalizeLinkedInId(match[1]),
+    campaignId: normalizeLinkedInId(match[2]),
+  }
+}
+
+export function buildLinkedInCampaignId(rawAccountId: unknown, rawCampaignId: unknown): string {
+  const accountId = normalizeLinkedInId(rawAccountId)
+  const campaignId = normalizeLinkedInId(rawCampaignId)
+  if (!accountId || !campaignId) return normalizeLinkedInId(rawCampaignId)
+  return `linkedin:${accountId}:${campaignId}`
 }
 
 /**
@@ -71,18 +98,47 @@ function getDateRange() {
 
 export async function fetchLinkedInAdsCampaigns(config: LinkedInAdsConfig) {
   const apiVersion = config.apiVersion ?? DEFAULT_API_VERSION
+  const accessibleAccounts = await listAccessibleLinkedInAdAccounts(config)
+  if (accessibleAccounts.length === 0) {
+    throw new Error('No LinkedIn ad accounts found. Ensure the access token has the required Marketing API permissions.')
+  }
+
+  const requestedAccountId = normalizeLinkedInId(config.accountId)
+  const selectedAccount = requestedAccountId
+    ? accessibleAccounts.find((account) => normalizeLinkedInId(account.id) === requestedAccountId)
+    : accessibleAccounts[0]
+
+  if (!selectedAccount?.id) {
+    if (requestedAccountId) {
+      throw new Error(`LinkedIn ad account ${requestedAccountId} was not found for this token. Reconnect LinkedIn or select the correct account.`)
+    }
+    throw new Error('Invalid LinkedIn ad account ID in response')
+  }
+
+  const accountData = await fetchLinkedInCampaignDataForAccount(config, {
+    accountId: selectedAccount.id,
+    accountName: selectedAccount.name || null,
+  })
+
+  logAPISuccess('linkedin_ads', 'fetchCampaigns', {
+    campaignCount: accountData.length,
+    withAnalytics: accountData.filter((c: any) => c.analytics).length,
+    accountCount: 1,
+  })
+
+  return accountData
+}
+
+export async function listAccessibleLinkedInAdAccounts(config: LinkedInAdsConfig): Promise<LinkedInAdAccountSummary[]> {
+  const apiVersion = config.apiVersion ?? DEFAULT_API_VERSION
   const headers = getLinkedInHeaders(config.accessToken, apiVersion)
 
-  logger.info('Fetching LinkedIn Ads campaigns')
-
-  // Validate required configuration
   if (!config.accessToken) {
     throw new Error('LinkedIn Ads access token is required')
   }
 
-  // Step 1: Fetch ad accounts using Rest.li finder method
   const accountsUrl = `${LINKEDIN_API_BASE}/rest/adAccounts?q=search&search=(status:(values:List(ACTIVE,DRAFT)))`
-  
+
   const accountsData = await withRateLimit('linkedin_ads', async () => {
     try {
       const accountsResponse = await fetch(accountsUrl, {
@@ -153,30 +209,31 @@ export async function fetchLinkedInAdsCampaigns(config: LinkedInAdsConfig) {
       )
     }
   })
-  
-  if (!accountsData.elements || accountsData.elements.length === 0) {
-    throw new Error('No LinkedIn ad accounts found. Ensure the access token has the required Marketing API permissions.')
-  }
 
-  const requestedAccountId = normalizeLinkedInId(config.accountId)
+  if (!Array.isArray(accountsData.elements)) return []
+  return accountsData.elements
+    .filter((account: any) => !!account?.id)
+    .map((account: any) => ({
+      id: normalizeLinkedInId(account.id),
+      name: account.name || account.reference || null,
+    }))
+}
 
-  const selectedAccount = requestedAccountId
-    ? accountsData.elements.find((account: any) => normalizeLinkedInId(account.id) === requestedAccountId)
-    : accountsData.elements[0]
+async function fetchLinkedInCampaignDataForAccount(
+  config: LinkedInAdsConfig,
+  sourceAccount: { accountId: string; accountName?: string | null }
+) {
+  const apiVersion = config.apiVersion ?? DEFAULT_API_VERSION
+  const headers = getLinkedInHeaders(config.accessToken, apiVersion)
+  const accountId = normalizeLinkedInId(sourceAccount.accountId)
+  const accountUrn = toLinkedInUrn('sponsoredAccount', accountId)
 
-  if (!selectedAccount?.id) {
-    if (requestedAccountId) {
-      throw new Error(`LinkedIn ad account ${requestedAccountId} was not found for this token. Reconnect LinkedIn or select the correct account.`)
-    }
+  if (!accountId) {
     throw new Error('Invalid LinkedIn ad account ID in response')
   }
 
-  // Step 2: Fetch campaigns for the ad account
-  // Build URN properly - account ID can be URN or numeric in API responses.
-  const accountUrn = toLinkedInUrn('sponsoredAccount', selectedAccount.id)
-  
   const campaignsUrl = `${LINKEDIN_API_BASE}/rest/adCampaigns?q=search&search=(account:(values:List(${accountUrn})))&count=100`
-  
+
   const campaignsData = await withRateLimit('linkedin_ads', async () => {
     try {
       const campaignsResponse = await fetch(campaignsUrl, {
@@ -248,11 +305,9 @@ export async function fetchLinkedInAdsCampaigns(config: LinkedInAdsConfig) {
   })
 
   if (!campaignsData.elements || campaignsData.elements.length === 0) {
-    logger.info('No LinkedIn campaigns found')
     return []
   }
 
-  // Step 3: Fetch analytics for campaigns (batch request for efficiency)
   const dateRange = getDateRange()
   const campaignIds = campaignsData.elements.map((c: any) => normalizeLinkedInId(c.id))
   const campaignUrns = campaignIds.map((id: string) => toLinkedInUrn('sponsoredCampaign', id))
@@ -303,14 +358,86 @@ export async function fetchLinkedInAdsCampaigns(config: LinkedInAdsConfig) {
   const campaignsWithMetrics = campaignsData.elements.map((campaign: any) => ({
     ...campaign,
     analytics: analyticsMap.get(normalizeLinkedInId(campaign.id)) || null,
+    source_account_id: accountId,
+    source_account_name: sourceAccount.accountName || null,
   }))
 
-  logAPISuccess('linkedin_ads', 'fetchCampaigns', {
-    campaignCount: campaignsWithMetrics.length,
-    withAnalytics: campaignsWithMetrics.filter((c: any) => c.analytics).length,
+  return campaignsWithMetrics
+}
+
+export async function fetchLinkedInAdsCampaignsAggregated(config: LinkedInAdsConfig) {
+  logger.info('Fetching LinkedIn Ads campaigns (aggregated)')
+
+  const configuredAccountId = normalizeLinkedInId(config.accountId)
+  let sourceAccounts: Array<{ accountId: string; accountName?: string | null }> = []
+  try {
+    const accessibleAccounts = await listAccessibleLinkedInAdAccounts(config)
+    sourceAccounts = accessibleAccounts.map((account) => ({
+      accountId: account.id,
+      accountName: account.name || null,
+    }))
+
+    if (configuredAccountId) {
+      const matched = sourceAccounts.find((account) => normalizeLinkedInId(account.accountId) === configuredAccountId)
+      if (matched) {
+        sourceAccounts = [matched, ...sourceAccounts.filter((account) => account !== matched)]
+      } else {
+        sourceAccounts.unshift({ accountId: configuredAccountId, accountName: null })
+      }
+    }
+  } catch (error: any) {
+    logger.warn('Failed to list accessible LinkedIn ad accounts, falling back to configured account', {
+      error: error?.message || String(error),
+    })
+
+    if (!configuredAccountId) {
+      throw error
+    }
+
+    sourceAccounts = [{ accountId: configuredAccountId, accountName: null }]
+  }
+
+  const uniqueAccountIds = new Set<string>()
+  sourceAccounts = sourceAccounts.filter((account) => {
+    const normalizedId = normalizeLinkedInId(account.accountId)
+    if (!normalizedId || uniqueAccountIds.has(normalizedId)) return false
+    uniqueAccountIds.add(normalizedId)
+    return true
   })
 
-  return campaignsWithMetrics
+  if (sourceAccounts.length === 0) {
+    throw new Error('No LinkedIn ad accounts found. Ensure the access token has the required Marketing API permissions.')
+  }
+
+  const campaigns: any[] = []
+  const partialFailures: LinkedInPartialFailure[] = []
+
+  for (const sourceAccount of sourceAccounts) {
+    try {
+      const accountCampaigns = await fetchLinkedInCampaignDataForAccount(config, sourceAccount)
+      campaigns.push(...accountCampaigns)
+    } catch (error: any) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown LinkedIn account sync error'
+      partialFailures.push({ accountId: sourceAccount.accountId, error: errorMessage })
+      logger.error('Failed LinkedIn campaign fetch for ad account; continuing', {
+        accountId: sourceAccount.accountId,
+        error: errorMessage,
+      })
+    }
+  }
+
+  if (campaigns.length === 0 && partialFailures.length > 0) {
+    throw new Error(`LinkedIn campaign sync failed for all accounts: ${partialFailures[0].error}`)
+  }
+
+  logAPISuccess('linkedin_ads', 'fetchCampaignsAggregated', {
+    accountCount: sourceAccounts.length,
+    campaignCount: campaigns.length,
+    withAnalytics: campaigns.filter((c: any) => c.analytics).length,
+    partialFailures: partialFailures.length,
+  })
+
+  return { campaigns, partialFailures }
 }
 
 export function transformLinkedInAdsData(apiData: any[]) {
@@ -318,21 +445,25 @@ export function transformLinkedInAdsData(apiData: any[]) {
   const metrics: any[] = []
 
   apiData.forEach((campaign: any) => {
+    const sourceAccountId = normalizeLinkedInId(campaign.source_account_id || campaign.account)
     const campaignId = normalizeLinkedInId(campaign.id)
+    const namespacedCampaignId = buildLinkedInCampaignId(sourceAccountId, campaignId)
 
     campaigns.push({
-      campaign_id: campaignId,
+      campaign_id: namespacedCampaignId,
       campaign_name: campaign.name,
       platform: 'linkedin_ads',
       status: normalizeLinkedInStatus(campaign.status || 'DRAFT'),
       budget_amount: campaign.dailyBudget?.amount
         ? parseFloat(campaign.dailyBudget.amount)
         : null,
+      customer_id: sourceAccountId || null,
+      customer_name: campaign.source_account_name || null,
     })
 
     if (campaign.analytics) {
       metrics.push({
-        campaign_api_id: campaignId,
+        campaign_api_id: namespacedCampaignId,
         date: new Date().toISOString().split('T')[0],
         impressions: parseInt(campaign.analytics.impressions) || 0,
         clicks: parseInt(campaign.analytics.clicks) || 0,
@@ -512,12 +643,18 @@ export function transformLinkedInCreativeData(apiData: any[], campaignIdMap: Map
   const metrics: any[] = []
 
   apiData.forEach((creative: any) => {
-    // Extract campaign ID from the creative's campaign URN
     const campaignUrn = creative.campaign
-    const campaignApiId = campaignUrn ? normalizeLinkedInId(campaignUrn) : null
-    
+    const rawCampaignId = campaignUrn ? normalizeLinkedInId(campaignUrn) : null
+    const rawAccountId = creative.account ? normalizeLinkedInId(creative.account) : null
+    const fallbackParts = extractLinkedInCampaignIdParts(rawCampaignId)
+    const campaignApiId = rawCampaignId
+      ? buildLinkedInCampaignId(rawAccountId || fallbackParts?.accountId, fallbackParts?.campaignId || rawCampaignId)
+      : null
+
     // Get the database campaign ID
-    const dbCampaignId = campaignApiId ? campaignIdMap.get(campaignApiId) : null
+    const dbCampaignId = campaignApiId
+      ? campaignIdMap.get(campaignApiId) || campaignIdMap.get(rawCampaignId || '')
+      : null
 
     // Extract content from creative
     let headlines: string[] = []
