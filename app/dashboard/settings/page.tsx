@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Key, Link as LinkIcon, Check, X, Save, Eye, EyeOff, RefreshCw, AlertCircle, ExternalLink, MessageSquare, Sparkles } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { CHAT_MODELS, DEFAULT_CHAT_MODEL, normalizeModelId, type ChatModelOption } from '@/lib/chat-models';
 
 interface AdAccount {
   id: string;
@@ -60,7 +61,7 @@ export default function SettingsPage() {
   const [googleKey, setGoogleKey] = useState('');
   
   // Default model
-  const [defaultModel, setDefaultModel] = useState('anthropic/claude-sonnet-4-5');
+  const [defaultModel, setDefaultModel] = useState(DEFAULT_CHAT_MODEL);
   
   // Demo mode
   const [demoMode, setDemoMode] = useState(false);
@@ -195,6 +196,9 @@ export default function SettingsPage() {
   }, [supabase]);
 
   useEffect(() => {
+    const savedDefaultModel = localStorage.getItem('default_model');
+    setDefaultModel(normalizeModelId(savedDefaultModel));
+
     loadAdAccounts();
     loadCustomInstructions();
 
@@ -451,6 +455,13 @@ export default function SettingsPage() {
     { id: 'ai-models', label: 'AI Models' },
     { id: 'preferences', label: 'Preferences' },
   ];
+
+  const getTierLabel = (tier: ChatModelOption['tier']) => {
+    if (tier === 'recommended') return 'Recommended default';
+    if (tier === 'frontier') return 'Premium frontier';
+    if (tier === 'balanced') return 'Balanced';
+    return 'Fast';
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -802,23 +813,34 @@ export default function SettingsPage() {
           {/* Default Model Card */}
           <div className="p-6 rounded-xl bg-white/5 border border-white/10">
             <h3 className="text-lg font-semibold mb-4">Default AI Model</h3>
+            <p className="text-sm text-gray-400 mb-4">
+              Recommended default is tuned for strong quality-per-cost. Premium frontier options prioritize maximum capability.
+            </p>
             <select
               value={defaultModel}
-              onChange={(e) => setDefaultModel(e.target.value)}
+              onChange={(e) => setDefaultModel(normalizeModelId(e.target.value))}
               className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-purple-500/50 focus:outline-none"
             >
-              <optgroup label="OpenAI GPT-5">
-                <option value="openai/gpt-5">GPT-5 (Flagship)</option>
-                <option value="openai/gpt-5-mini">GPT-5 Mini</option>
+              <optgroup label="OpenAI">
+                {CHAT_MODELS.filter((model) => model.provider === 'openai').map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.name} ({getTierLabel(model.tier)})
+                  </option>
+                ))}
               </optgroup>
-              <optgroup label="Anthropic Claude 4.5">
-                <option value="anthropic/claude-sonnet-4-5">Claude Sonnet 4.5 (Recommended)</option>
-                <option value="anthropic/claude-opus-4-5">Claude Opus 4.5</option>
-                <option value="anthropic/claude-haiku-4-5">Claude Haiku 4.5</option>
+              <optgroup label="Anthropic">
+                {CHAT_MODELS.filter((model) => model.provider === 'anthropic').map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.name} ({getTierLabel(model.tier)})
+                  </option>
+                ))}
               </optgroup>
-              <optgroup label="Google Gemini 3">
-                <option value="google/gemini-3">Gemini 3</option>
-                <option value="google/gemini-3-flash">Gemini 3 Flash</option>
+              <optgroup label="Google">
+                {CHAT_MODELS.filter((model) => model.provider === 'google').map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.name} ({getTierLabel(model.tier)})
+                  </option>
+                ))}
               </optgroup>
             </select>
           </div>

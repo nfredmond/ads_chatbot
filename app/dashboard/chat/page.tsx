@@ -4,47 +4,20 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Loader2, Sparkles, User, RotateCcw, ChevronDown } from 'lucide-react';
 import { FilterBar } from '@/components/FilterBar';
 import { useFilters } from '@/lib/context/FilterContext';
+import { CHAT_MODELS, DEFAULT_CHAT_MODEL, normalizeModelId, type ChatModelOption } from '@/lib/chat-models';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
 
-interface ModelOption {
-  id: string;
-  name: string;
-  provider: 'openai' | 'anthropic' | 'google';
-  description: string;
-}
-
-const AVAILABLE_MODELS: ModelOption[] = [
-  // OpenAI GPT-5 Base Series (400k context, 128k output)
-  { id: 'openai/gpt-5', name: 'GPT-5', provider: 'openai', description: 'Flagship reasoning • $1.25 in / $10 out per 1M' },
-  { id: 'openai/gpt-5-mini', name: 'GPT-5 Mini', provider: 'openai', description: 'Strong & affordable • $0.25 in / $2 out per 1M' },
-  { id: 'openai/gpt-5-nano', name: 'GPT-5 Nano', provider: 'openai', description: 'Fastest & cheapest • $0.05 in / $0.40 out per 1M' },
-  { id: 'openai/gpt-5-pro', name: 'GPT-5 Pro', provider: 'openai', description: 'Max reasoning • $15 in / $120 out per 1M' },
-  { id: 'openai/gpt-5-codex', name: 'GPT-5 Codex', provider: 'openai', description: 'Agentic coding • $1.25 in / $10 out per 1M' },
-  // OpenAI GPT-5.1 Series (400k context, adaptive thinking)
-  { id: 'openai/gpt-5.1', name: 'GPT-5.1 Thinking', provider: 'openai', description: 'Adaptive reasoning • $1.25 in / $10 out per 1M' },
-  { id: 'openai/gpt-5.1-chat-latest', name: 'GPT-5.1 Instant', provider: 'openai', description: 'Fast conversational • $1.25 in / $10 out per 1M' },
-  { id: 'openai/gpt-5.1-codex', name: 'GPT-5.1 Codex', provider: 'openai', description: 'Agentic coding • $1.25 in / $10 out per 1M' },
-  { id: 'openai/gpt-5.1-codex-mini', name: 'GPT-5.1 Codex Mini', provider: 'openai', description: 'Smaller coding • $0.25 in / $2 out per 1M' },
-  { id: 'openai/gpt-5.1-codex-max', name: 'GPT-5.1 Codex Max', provider: 'openai', description: 'Frontier long-horizon coding' },
-  // Anthropic Claude 4.5 Family (200k context, 64k output)
-  { id: 'anthropic/claude-sonnet-4-5', name: 'Claude Sonnet 4.5', provider: 'anthropic', description: 'Smart default • $3 in / $15 out per 1M' },
-  { id: 'anthropic/claude-opus-4-5', name: 'Claude Opus 4.5', provider: 'anthropic', description: 'Max intelligence • $5 in / $25 out per 1M' },
-  { id: 'anthropic/claude-haiku-4-5', name: 'Claude Haiku 4.5', provider: 'anthropic', description: 'Fast & efficient • $1 in / $5 out per 1M' },
-  // Google Gemini 3 Family
-  { id: 'google/gemini-3', name: 'Gemini 3', provider: 'google', description: 'Google flagship • multimodal' },
-  { id: 'google/gemini-3-pro', name: 'Gemini 3 Pro', provider: 'google', description: 'Advanced reasoning' },
-  { id: 'google/gemini-3-flash', name: 'Gemini 3 Flash', provider: 'google', description: 'Fast & efficient' },
-];
+const AVAILABLE_MODELS: ChatModelOption[] = CHAT_MODELS;
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<string>('anthropic/claude-sonnet-4-5');
+  const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_CHAT_MODEL);
   const [showModelSelector, setShowModelSelector] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const modelSelectorRef = useRef<HTMLDivElement>(null);
@@ -54,6 +27,9 @@ export default function ChatPage() {
 
   // Fetch available customers on mount
   useEffect(() => {
+    const savedDefaultModel = localStorage.getItem('default_model');
+    setSelectedModel(normalizeModelId(savedDefaultModel));
+
     const fetchCustomers = async () => {
       try {
         const response = await fetch('/api/data?startDate=2000-01-01&endDate=2099-12-31');
@@ -81,7 +57,7 @@ export default function ChatPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const currentModel = AVAILABLE_MODELS.find(m => m.id === selectedModel) || AVAILABLE_MODELS[1];
+  const currentModel = AVAILABLE_MODELS.find(m => m.id === selectedModel) || AVAILABLE_MODELS[0];
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -141,6 +117,13 @@ export default function ChatPage() {
 
   const clearChat = () => {
     setMessages([]);
+  };
+
+  const getTierLabel = (tier: ChatModelOption['tier']) => {
+    if (tier === 'recommended') return 'Recommended default';
+    if (tier === 'frontier') return 'Premium frontier';
+    if (tier === 'balanced') return 'Balanced';
+    return 'Fast';
   };
 
   const suggestedPrompts = [
@@ -203,6 +186,7 @@ export default function ChatPage() {
                           }`}
                         >
                           <p className="text-sm font-medium">{model.name}</p>
+                          <p className="text-xs text-gray-400">{getTierLabel(model.tier)}</p>
                           <p className="text-xs text-gray-500">{model.description}</p>
                         </button>
                       ))}
@@ -227,6 +211,7 @@ export default function ChatPage() {
                           }`}
                         >
                           <p className="text-sm font-medium">{model.name}</p>
+                          <p className="text-xs text-gray-400">{getTierLabel(model.tier)}</p>
                           <p className="text-xs text-gray-500">{model.description}</p>
                         </button>
                       ))}
@@ -251,6 +236,7 @@ export default function ChatPage() {
                           }`}
                         >
                           <p className="text-sm font-medium">{model.name}</p>
+                          <p className="text-xs text-gray-400">{getTierLabel(model.tier)}</p>
                           <p className="text-xs text-gray-500">{model.description}</p>
                         </button>
                       ))}

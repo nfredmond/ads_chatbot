@@ -1,6 +1,7 @@
 import { generateText } from 'ai';
 import { createGateway } from '@ai-sdk/gateway';
 import { createClient } from '@/lib/supabase/server';
+import { DEFAULT_CHAT_MODEL, getGatewayModelId } from '@/lib/chat-models';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Initialize Vercel AI Gateway
@@ -8,35 +9,11 @@ const gateway = createGateway({
   apiKey: process.env.AI_GATEWAY_API_KEY,
 });
 
-// Model ID mapping - convert UI display IDs to actual Vercel AI Gateway model IDs
-// See: https://vercel.com/docs/ai-gateway/models-and-providers
-const MODEL_MAP: Record<string, string> = {
-  // Anthropic models - use actual Claude 4 models
-  'anthropic/claude-sonnet-4-5': 'anthropic/claude-sonnet-4',
-  'anthropic/claude-opus-4-5': 'anthropic/claude-opus-4',
-  'anthropic/claude-haiku-4-5': 'anthropic/claude-haiku-4',
-  // OpenAI models - map fictional GPT-5 to available GPT-4o models
-  'openai/gpt-5': 'openai/gpt-4o',
-  'openai/gpt-5-mini': 'openai/gpt-4o-mini',
-  'openai/gpt-5-nano': 'openai/gpt-4o-mini',
-  'openai/gpt-5-pro': 'openai/o1',
-  'openai/gpt-5-codex': 'openai/gpt-4o',
-  'openai/gpt-5.1': 'openai/gpt-4.1',
-  'openai/gpt-5.1-chat-latest': 'openai/gpt-4.1',
-  'openai/gpt-5.1-codex': 'openai/gpt-4.1',
-  'openai/gpt-5.1-codex-mini': 'openai/gpt-4.1-mini',
-  'openai/gpt-5.1-codex-max': 'openai/gpt-4.1',
-  // Google models - use Gemini 2.0 models
-  'google/gemini-3': 'google/gemini-2.0-flash',
-  'google/gemini-3-pro': 'google/gemini-2.0-flash',
-  'google/gemini-3-flash': 'google/gemini-2.0-flash',
-};
-
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
-    const { messages, model = 'anthropic/claude-sonnet-4-5', startDate, endDate, customers } = await request.json();
+    const { messages, model = DEFAULT_CHAT_MODEL, startDate, endDate, customers } = await request.json();
 
     // Check for API key
     if (!process.env.AI_GATEWAY_API_KEY) {
@@ -47,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Map UI model ID to gateway model ID
-    const gatewayModelId = MODEL_MAP[model] || 'anthropic/claude-sonnet-4';
+    const gatewayModelId = getGatewayModelId(model);
 
     // Create authenticated Supabase client
     const supabase = await createClient();
