@@ -72,7 +72,9 @@ export async function GET(request: NextRequest) {
             client_id: adAccount.metadata.client_id,
             redirect_uri: `${request.nextUrl.origin}/auth/linkedin`,
             state: stateToken,
-            scope: 'r_ads r_ads_reporting rw_ads r_organization_social',
+            // Keep LinkedIn OAuth scopes limited to core Ads scopes to reduce invalid_scope failures
+            // when optional organization/social products are not approved.
+            scope: 'r_ads r_ads_reporting rw_ads',
           }).toString(),
         request.url
       )
