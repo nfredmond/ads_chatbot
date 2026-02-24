@@ -450,6 +450,11 @@ export default function SettingsPage() {
     return account;
   };
 
+  const getConnectedAccountLabel = (account: AdAccount) => {
+    if (account.platform === 'meta_ads') return 'Meta Ads Account';
+    return account.account_name;
+  };
+
   const tabs = [
     { id: 'ad-platforms', label: 'Ad Platforms' },
     { id: 'ai-models', label: 'AI Models' },
@@ -531,7 +536,7 @@ export default function SettingsPage() {
                       </div>
                       <div>
                         <p className="font-medium">{getPlatformDisplayName(account.platform)}</p>
-                        <p className="text-sm text-gray-400">{account.account_name}</p>
+                        <p className="text-sm text-gray-400">{getConnectedAccountLabel(account)}</p>
                         {account.last_synced_at && (
                           <p className="text-xs text-gray-500">
                             Last synced: {new Date(account.last_synced_at).toLocaleString()}
